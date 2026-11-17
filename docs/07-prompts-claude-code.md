@@ -1,58 +1,84 @@
 # 07 — Prompts para o Claude Code
 
-Cole um por vez, revise o resultado e só então avance. Para tarefas grandes, peça primeiro um plano.
+Cole um por vez, revise o resultado e só então avance. Cada prompt já cita as skills da fase (ver tabela em `CLAUDE.md`). Se uma skill não estiver instalada, o prompt manda seguir o fluxo equivalente.
 
-## Fase 0
+## Fase 0 (sem skills)
 ```
 Leia CLAUDE.md e os arquivos em docs/. Execute a Fase 0 de docs/06-roadmap-e-tarefas.md:
 crie o projeto Next.js (App Router, TypeScript strict, Tailwind), ESLint, Vitest e pnpm,
-com a estrutura de pastas do CLAUDE.md. Não instale dependências fora do escopo.
-Ao final, rode test, lint e build e me mostre o resultado.
+com a estrutura de pastas do CLAUDE.md. Não use skills nesta fase e não instale
+dependências fora do escopo. Ao final, rode test, lint e build e me mostre o resultado.
 ```
 
-## Fase 1 — dados
+## Fase 1 — dados e detector
 ```
-Execute a primeira metade da Fase 1. Inspecione data/arc.source.json (vou colocá-lo lá)
-e mostre a estrutura real antes de converter. Depois implemente scripts/build-bible.ts e
-src/lib/bible conforme docs/04, imprimindo o relatório de verificações. Não versione o texto.
-```
-
-## Fase 1 — detector
-```
-Porte o detector de prototype/passagens-citadas.html para src/lib/detect como módulo puro,
-conforme docs/03, agora validando capítulo E versículo com a contagem gerada.
-Escreva primeiro os testes com a tabela de casos de docs/03 e faça todos passarem.
+Leia CLAUDE.md e docs/03 e docs/04. Use a skill writing-plans para propor o plano da Fase 1
+e espere minha aprovação.
+Depois de aprovado, use dispatching-parallel-agents para trabalhar em paralelo em:
+(A) scripts/build-bible.ts + src/lib/bible, e (B) o detector em src/lib/detect.
+Para o detector, use a skill test-driven-development: escreva primeiro os testes com a tabela
+de casos de docs/03, veja-os falhar e só então implemente, portando a lógica de
+prototype/passagens-citadas.html, agora validando capítulo E versículo.
+Antes de converter a ARC, inspecione data/arc.source.json e mostre a estrutura real.
+Não versione o texto. Se alguma skill não estiver instalada, siga o fluxo equivalente
+(plano → aprovação; testes primeiro).
 ```
 
 ## Fase 2
 ```
-Implemente a Fase 2: tela do operador com botão de escuta (SpeechProvider web-speech),
-ReferenceCard com referência e texto, histórico (tocar traz de volta ao destaque),
-barra de transcrição e busca manual. Siga os requisitos de docs/01 e a arquitetura de docs/02.
-Resultados parciais substituem as passagens do mesmo segmentId.
+Use a skill frontend-design (e ui-ux-pro-max, se instalada) para a Fase 2: tela do operador
+com botão de escuta (SpeechProvider web-speech), ReferenceCard com referência e texto,
+histórico (tocar traz de volta ao destaque), barra de transcrição e busca manual.
+Siga docs/01 e docs/02: leitura de relance, alto contraste, tema claro/escuro, alvos ≥ 48px,
+mobile em retrato. Resultados parciais substituem as passagens do mesmo segmentId.
+Mostre o plano de layout antes de implementar.
 ```
 
 ## Fase 3
 ```
-Implemente a Fase 3 (PWA) conforme docs/05: manifest, ícones, service worker com cache
-versionado dos dados, Wake Lock. Explique como testar a instalação e o modo offline.
+Use a skill writing-plans e proponha o plano da Fase 3 (PWA) conforme docs/05. Depois de
+aprovado, implemente: manifest, ícones, service worker com cache versionado dos dados e
+Wake Lock. Explique como testar instalação e modo offline.
 ```
 
 ## Fase 4
 ```
-Implemente a Fase 4: provider Deepgram (src/lib/speech/deepgram.ts) e /api/voice-token.
-Antes de codar, consulte a documentação atual do Deepgram sobre chaves temporárias e
-streaming e me mostre o plano. Mantenha a interface SpeechProvider.
+Use a skill writing-plans para a Fase 4. Antes de planejar, consulte a documentação atual
+do Deepgram sobre chaves temporárias e streaming e me mostre o plano. Depois implemente
+src/lib/speech/deepgram.ts e /api/voice-token mantendo a interface SpeechProvider.
 ```
 
-## Para corrigir um bug de detecção
+## Fase 5 — trecho falado
 ```
-A frase "<frase dita>" gerou "<resultado>" mas o esperado era "<esperado>".
-Adicione o caso em docs/03 e nos testes, veja-o falhar, corrija o detector e rode a suíte.
+Use a skill brainstorming para comparar abordagens de busca de trecho falado (índice léxico
+no cliente vs embeddings) para RF-08, com prós, contras e custo. Espere minha escolha.
+Depois implemente com a skill test-driven-development, com limiar de confiança e testes com
+20 versículos comuns.
 ```
 
-## Revisão antes de release
+## Fase 6 — contexto e refinamentos
 ```
-Faça uma revisão do projeto contra docs/01 (requisitos) e o checklist de docs/05.
-Liste o que falta, riscos e qualquer referência inválida que ainda possa aparecer.
+Use test-driven-development e a skill do projeto adicionar-caso-de-deteccao para implementar
+RF-09 (contexto de capítulo), ordem invertida ("capítulo 3 versículo 16 de João") e aliases,
+cada um com casos novos em docs/03 e nos testes.
+```
+
+## Fases 7 e 8
+```
+Use a skill brainstorming para a Fase <7 ou 8>. Para a 7, consulte a documentação oficial
+do Holyrics antes de qualquer proposta e não assuma endpoints. Mostre opções e riscos e
+espere minha escolha antes de implementar.
+```
+
+## Bug de detecção (a qualquer momento)
+```
+Use a skill adicionar-caso-de-deteccao.
+Frase dita: "<frase>"
+Resultado obtido: "<resultado>"
+Resultado esperado: "<esperado ou nenhuma>"
+```
+
+## Release
+```
+Use a skill checklist-de-release e me entregue a lista final: pronto, pendente e riscos.
 ```

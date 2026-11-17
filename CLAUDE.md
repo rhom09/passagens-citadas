@@ -47,3 +47,19 @@ docs/                    # documentação do projeto
 ## Antes de codar
 Leia, nesta ordem: `docs/01-visao-e-requisitos.md`, `docs/03-deteccao-de-passagens.md`, `docs/02-arquitetura.md`. O comportamento de referência do detector está em `prototype/passagens-citadas.html` (inclui um bug conhecido, descrito em `docs/03`).
 Para tarefas grandes, proponha um plano curto e espere aprovação antes de implementar.
+
+## Skills por fase
+Use a skill indicada se estiver instalada; se não estiver, siga o fluxo descrito no prompt da fase (`docs/07`). Não ative skills fora da fase indicada.
+
+| Fase | Skills |
+|---|---|
+| 0 | nenhuma |
+| 1 | `writing-plans`, `test-driven-development`, `dispatching-parallel-agents` (dados e detector em paralelo) |
+| 2 | `frontend-design` (opcional: `ui-ux-pro-max` para mobile) |
+| 3 | `writing-plans` |
+| 4 | `writing-plans` |
+| 5 | `brainstorming`, `test-driven-development` |
+| 6 | `test-driven-development`, `adicionar-caso-de-deteccao` |
+| 7–8 | `brainstorming` |
+| Bug de detecção (qualquer momento) | `adicionar-caso-de-deteccao` (`.claude/skills/`) |
+| Release | `checklist-de-release` (`.claude/skills/`) |

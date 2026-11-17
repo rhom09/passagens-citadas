@@ -20,3 +20,7 @@ Assistente de projeção para cultos: escuta a pregação, detecta passagens bí
 | `docs/06-roadmap-e-tarefas.md` | Fases com critérios de aceite |
 | `docs/07-prompts-claude-code.md` | Prompts prontos por fase |
 | `prototype/passagens-citadas.html` | Protótipo funcional (referência) |
+| `.claude/skills/` | Skills do projeto: `adicionar-caso-de-deteccao` e `checklist-de-release` |
+
+## Skills
+Cada fase indica as skills a usar (tabela no `CLAUDE.md` e prompts prontos em `docs/07`). As duas skills do projeto já estão em `.claude/skills/`; as demais (`test-driven-development`, `frontend-design` etc.) precisam estar instaladas no seu Claude Code. Sem elas, os prompts seguem o fluxo equivalente.
