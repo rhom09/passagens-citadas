@@ -1,0 +1,39 @@
+{
+  "name": "passagens-citadas",
+  "version": "1.0.0",
+  "description": "Webapp (PWA) que escuta a pregação, detecta passagens bíblicas citadas e mostra a referência (e o texto da ARC) para o operador do PC da igreja",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "test": "vitest run",
+    "lint": "eslint . --ignore-pattern node_modules --ignore-pattern .next",
+    "build": "next build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.21.0",
+      "onFail": "download"
+    }
+  },
+  "packageManager": "pnpm@12.21.0",
+  "type": "module",
+  "dependencies": {
+    "next": "^16.4.6",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@tailwindcss/vite": "^4.3.5",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "eslint": "^10.15.0",
+    "eslint-plugin-react": "^7.37.5",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}
