@@ -7,6 +7,7 @@
     "dev": "next dev",
     "test": "vitest run",
     "lint": "eslint . --ignore-pattern node_modules --ignore-pattern .next",
+    "bible:build": "tsx scripts/build-bible.ts",
     "build": "next build"
   },
   "keywords": [],
@@ -28,11 +29,13 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@tailwindcss/postcss": "^4.3.5",
     "@tailwindcss/vite": "^4.3.5",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "eslint": "^10.15.0",
     "eslint-plugin-react": "^7.37.5",
+    "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.1.0"
   }
