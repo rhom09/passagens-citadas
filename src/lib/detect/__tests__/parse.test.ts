@@ -78,6 +78,29 @@ describe('parseReferences', () => {
     expect(r).toHaveLength(1);
     expect(r[0]).toMatchObject({ bookName: '2 Tessalonicenses', chapter: 2, verseStart: 1 });
   });
+  it('"segunda a Tessalonicenses capítulo 2 versos 3" → 2 Tessalonicenses 2:3', () => {
+    const r = parseReferences('segunda a Tessalonicenses capítulo 2 versos 3');
+    expect(r).toHaveLength(1);
+    expect(r[0]).toMatchObject({ bookName: '2 Tessalonicenses', chapter: 2, verseStart: 3 });
+  });
+  it('"segunda carta aos Tessalonicenses capítulo 2 verso 3" → 2 Tessalonicenses 2:3', () => {
+    const r = parseReferences('segunda carta aos Tessalonicenses capítulo 2 verso 3');
+    expect(r).toHaveLength(1);
+    expect(r[0]).toMatchObject({ bookName: '2 Tessalonicenses', chapter: 2, verseStart: 3 });
+  });
+  it('"primeira epístola de Pedro 1:3" → 1 Pedro 1:3', () => {
+    const r = parseReferences('primeira epístola de Pedro 1:3');
+    expect(r).toHaveLength(1);
+    expect(r[0]).toMatchObject({ bookName: '1 Pedro', chapter: 1, verseStart: 3 });
+  });
+  it('"primeira de João 4:8" → 1 João 4:8', () => {
+    const r = parseReferences('primeira de João 4:8');
+    expect(r).toHaveLength(1);
+    expect(r[0]).toMatchObject({ bookName: '1 João', chapter: 4, verseStart: 8 });
+  });
+  it('"Tessalonicenses capítulo 1 versículo 1" (sem prefixo) → nenhuma', () => {
+    expect(parseReferences('Tessalonicenses capítulo 1 versículo 1')).toHaveLength(0);
+  });
   it('"João capítulo 3 e versículo 16" → João 3:16 (conector e)', () => {
     const r = parseReferences('João capítulo 3 e versículo 16');
     expect(r).toHaveLength(1);

@@ -110,9 +110,12 @@ export function parseReferences(text: string): RawMatch[] {
       ordinalVolume = ORDINAL_PREFIXES[tok0]!;
       let j = i + 1;
 
-      // Pular conectores opcionais: "de", "do", "carta de", etc.
-      while (j < tokens.length && ['de', 'do', 'dos', 'carta', 'aos'].includes(tokens[j]!)) {
+      // Pular conectores opcionais: "carta", "epistola", "a", "de", "do", etc. (até 3 palavras)
+      let skipped = 0;
+      const CONNECTORS = ['carta', 'cartas', 'epistola', 'epistolas', 'a', 'as', 'ao', 'aos', 'de', 'do', 'da', 'dos', 'das'];
+      while (j < tokens.length && CONNECTORS.includes(tokens[j]!) && skipped < 3) {
         j++;
+        skipped++;
       }
 
       if (j < tokens.length) {

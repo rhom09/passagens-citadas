@@ -37,6 +37,10 @@ O protótipo valida só o capítulo, não o versículo. Exemplo real de teste: f
 | "João capítulo 3 e versículo 16" | João 3:16 (conector "e" entre capítulo e versículo) |
 | "Tessalonicenses capítulo 1 versículo 1" (sem prefixo) | **nenhuma** (livro numerado exige prefixo) |
 | "Salmos 119" → (15 s depois) "versículo 105" | Salmos 119:105 (completado por contexto) |
+| "segunda a Tessalonicenses capítulo 2 versos 3" | 2 Tessalonicenses 2:3 |
+| "segunda carta aos Tessalonicenses capítulo 2 verso 3" | 2 Tessalonicenses 2:3 |
+| "primeira epístola de Pedro 1:3" | 1 Pedro 1:3 |
+| "primeira de João 4:8" | 1 João 4:8 |
 
 ## Melhorias planejadas
 - Ordem invertida: "capítulo 3, versículo 16 de João".
