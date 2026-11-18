@@ -1,4 +1,5 @@
 # Passagens Citadas
+Leia primeiro `docs/08-estado-atual.md`.
 
 Webapp (PWA) que escuta a pregação, detecta passagens bíblicas citadas e mostra a referência (e o texto da ARC) para o **operador** do PC da igreja, que então projeta pelo Holyrics.
 
@@ -16,7 +17,7 @@ Next.js (App Router) + TypeScript (strict) + Tailwind CSS + PWA (Serwist ou serv
 ## Comandos
 ```bash
 pnpm dev          # desenvolvimento (http://localhost:3000)
-pnpm test         # Vitest (obrigatório passar antes de qualquer commit)
+pnpm vitest run   # Vitest (obrigatório passar antes de qualquer commit, nunca rodar em watch)
 pnpm lint         # ESLint + tsc --noEmit
 pnpm build        # build de produção
 pnpm bible:build  # gera o JSON normalizado da ARC (docs/04)
@@ -45,7 +46,7 @@ docs/                    # documentação do projeto
 - Acessibilidade: contraste AA, foco visível, respeitar `prefers-reduced-motion` e tema claro/escuro.
 
 ## Antes de codar
-Leia, nesta ordem: `docs/01-visao-e-requisitos.md`, `docs/03-deteccao-de-passagens.md`, `docs/02-arquitetura.md`. O comportamento de referência do detector está em `prototype/passagens-citadas.html` (inclui um bug conhecido, descrito em `docs/03`).
+Leia `docs/08-estado-atual.md` para entender o progresso e as decisões recentes.
 Para tarefas grandes, proponha um plano curto e espere aprovação antes de implementar.
 
 ## Skills por fase
@@ -53,9 +54,7 @@ Use a skill indicada se estiver instalada; se não estiver, siga o fluxo descrit
 
 | Fase | Skills |
 |---|---|
-| 0 | nenhuma |
-| 1 | `writing-plans`, `dispatching-parallel-agents` (dados e detector em paralelo) |
-| 2 | `frontend-design` (opcional: `ui-ux-pro-max` para mobile) |
+| 0–2 | concluídas |
 | 3 | `writing-plans` |
 | 4 | `writing-plans` |
 | 5 | `brainstorming` |

@@ -16,6 +16,12 @@ Referência de comportamento: `prototype/passagens-citadas.html` (funções `nor
 ## Bug conhecido do protótipo
 O protótipo valida só o capítulo, não o versículo. Exemplo real de teste: falar "Números 2:88" exibiu **Números 2:88**, que não existe (Números 2 tem 34 versículos). A versão nova deve rejeitar. Corrigir exige os dados da ARC (docs/04).
 
+## Regras de conectores, contexto e descarte
+- **Conectores:** Aceita até 3 palavras de ligação ("carta", "epístola", "a", "de", "ao", etc.) entre prefixo ordinal e livro.
+- **Contexto (RF-09):** Frases do tipo "versículo N" completam a passagem anterior (se houver capítulo citado) dentro de uma janela de 15 segundos.
+- **Descarte de intervalo:** Se o versículo final for inválido (ex: menor que o inicial, ou inexistente), a detecção descarta o final e considera apenas o inicial (se válido).
+- **Descarte de livro numerado:** Livros numerados sem prefixo (ex: "Tessalonicenses 1:1") são rejeitados de propósito.
+
 ## Casos de teste (mínimo)
 | Entrada | Esperado |
 |---|---|
@@ -27,20 +33,21 @@ O protótipo valida só o capítulo, não o versículo. Exemplo real de teste: f
 | "Salmos cento e dezenove versículo cento e cinco" | Salmos 119:105 |
 | "Salmo 23" | Salmos 23 (sem versículo) |
 | "Judas 5" | Judas 1:5 |
-| "Números 2:88" | **nenhuma** (versículo inexistente) |
-| "João 22" | **nenhuma** (João tem 21 capítulos) |
-| "Samuel 3" | **nenhuma** (livro numerado sem prefixo) |
-| "Pedro disse que..." | **nenhuma** |
+| "Números 2:88" | nenhuma (versículo inexistente) |
+| "João 22" | nenhuma (João tem 21 capítulos) |
+| "Samuel 3" | nenhuma (livro numerado sem prefixo) |
+| "Pedro disse que..." | nenhuma |
 | "Salmos 119 versículo 176" | Salmos 119:176 |
 | parcial "joão 3" → depois "joão 3 16" | substitui no mesmo segmento, resultado final João 3:16 |
 | "segunda Tessalonicenses capítulo 2 verso 1" | 2 Tessalonicenses 2:1 |
-| "João capítulo 3 e versículo 16" | João 3:16 (conector "e" entre capítulo e versículo) |
-| "Tessalonicenses capítulo 1 versículo 1" (sem prefixo) | **nenhuma** (livro numerado exige prefixo) |
-| "Salmos 119" → (15 s depois) "versículo 105" | Salmos 119:105 (completado por contexto) |
+| "João capítulo 3 e versículo 16" | João 3:16 |
+| "Tessalonicenses capítulo 1 versículo 1" | nenhuma (livro numerado exige prefixo) |
+| "Salmos 119" → "versículo 105" (completar por contexto) | Salmos 119:105 |
 | "segunda a Tessalonicenses capítulo 2 versos 3" | 2 Tessalonicenses 2:3 |
 | "segunda carta aos Tessalonicenses capítulo 2 verso 3" | 2 Tessalonicenses 2:3 |
 | "primeira epístola de Pedro 1:3" | 1 Pedro 1:3 |
 | "primeira de João 4:8" | 1 João 4:8 |
+| "verso 5" (após contexto) | (ex: Salmos 23:5) |
 
 ## Melhorias planejadas
 - Ordem invertida: "capítulo 3, versículo 16 de João".

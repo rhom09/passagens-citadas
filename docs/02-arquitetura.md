@@ -1,5 +1,10 @@
 # 02 — Arquitetura
 
+## Componentes Principais
+- `DebugInspector`: Exibe a depuração da detecção via `?debug=1`, mostrando últimos 30 segmentos com `rawText`, `normalized` e passagens completadas por contexto.
+- `TranscriptStabilizer`: Hook/Componente para gerenciar o debounce de detecção (700ms/1500ms) antes de validar e exibir a referência.
+- `src/lib/detect`: Funções puras. `parseReferences` (parser), `explainDetection` (debug), `detectVerseOnly` (versículo sem livro).
+
 ## Visão geral
 ```
 Microfone → SpeechProvider → {segmentId, text, isFinal}

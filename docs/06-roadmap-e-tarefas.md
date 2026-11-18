@@ -3,24 +3,17 @@
 Cada fase só termina quando os critérios de aceite passam.
 
 ## Fase 0 — Setup
-- **Skills:** nenhuma
-- Criar app Next.js (App Router, TS strict, Tailwind), ESLint, Vitest, pnpm.
-- Estrutura de pastas conforme `CLAUDE.md`; manter o protótipo em `prototype/`.
-- **Aceite:** `pnpm dev`, `pnpm test`, `pnpm lint`, `pnpm build` funcionam.
+- [x] Concluída (Arquitetura & Config)
 
 ## Fase 1 — Dados e detector
-- **Skills:** `writing-plans`, `dispatching-parallel-agents` (script da ARC e detector em paralelo). Depois de pronto: `adicionar-caso-de-deteccao`
-- Implementar `scripts/build-bible.ts` e `src/lib/bible` (docs/04).
-- Portar o detector do protótipo para `src/lib/detect` (docs/03) **com validação de versículo**.
-- **Aceite:** todos os casos da tabela de docs/03 em testes; "Números 2:88" rejeitado; 66 livros / 1.189 capítulos verificados.
+- [x] Concluída (Dados Bíblicos & Detecção)
 
 ## Fase 2 — Interface do operador
-- **Skills:** `frontend-design` (opcional: `ui-ux-pro-max`)
-- Tela principal: botão de escuta, `ReferenceCard` (referência + texto), `History`, barra de transcrição, busca manual (RF-06).
-- Tema claro/escuro, fonte grande, alvos de toque ≥ 48px.
-- **Aceite:** fluxo completo com Web Speech no Chrome desktop; sem referência inválida na tela.
+- [x] Concluída (UI, Estabilização, Parser ajustes, RF-09/Contexto)
+  - Ajustes feitos: `useStabilizedPassages`, `DebugInspector`, `explainDetection`, conectores, "verso/versos", RF-09.
 
 ## Fase 3 — PWA
+- [ ] Fase 3 (PWA/Offline)
 - **Skills:** `writing-plans`
 - Manifest, ícones, service worker, cache dos dados, Wake Lock (docs/05).
 - **Aceite:** instalável; abre e consulta versículos offline.
