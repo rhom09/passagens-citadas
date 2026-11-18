@@ -1,0 +1,93 @@
+.card {
+  background: var(--surface);
+  border: 1px solid var(--sep);
+  border-radius: var(--radius);
+  padding: var(--gap-xl);
+  animation: slideIn 0.2s var(--ease-out) both;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-sm);
+  min-height: 160px;
+  text-align: center;
+}
+
+.emptyMsg {
+  font-size: var(--size-body);
+  color: var(--text-muted);
+}
+
+.emptyHint {
+  font-size: var(--size-sm);
+  color: var(--text-dim);
+}
+
+.inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-md);
+}
+
+.ref {
+  font-family: var(--font-mono);
+  font-size: var(--size-ref);
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.verse {
+  font-size: var(--size-verse);
+  color: var(--text-primary);
+  line-height: 1.6;
+  max-width: 60ch;
+}
+
+.verseHint {
+  font-size: var(--size-sm);
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.actions {
+  display: flex;
+  gap: var(--gap-sm);
+  margin-top: var(--gap-xs);
+}
+
+.copyBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-sm);
+  height: 48px;
+  padding: 0 var(--gap-lg);
+  background: var(--accent-glow);
+  border: 1px solid var(--accent-dim);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  font-size: var(--size-sm);
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.copyBtn:hover {
+  background: rgba(107, 140, 255, 0.25);
+  border-color: var(--accent);
+}

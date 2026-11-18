@@ -8,13 +8,13 @@ export function normalize(raw: string): string {
   // Remover acentos (NFD + strip combining marks)
   result = result.normalize('NFD').replace(/[̀-ͯ]/g, '');
 
-  // PRIMEIRO: Normalizar "3:16" para "3 versiculo 16" ANTES de remover pontuação
-  // Isso preserva os dois pontos para o padrão de formato "capitulo:versiculo"
-  result = result.replace(/\b(\d+):(\d+)\b/g, '$1 versiculo $2');
+  // PRIMEIRO: Normalizar separadores capítulo:versículo para "N versiculo M"
+  // Suporta "3:16", "3,16" e "3.16" — ANTES de remover pontuação
+  result = result.replace(/\b(\d+)[:.;,](\d+)\b/g, '$1 versiculo $2');
 
-  // DEPOIS: Substituir pontuação e separadores por espaços
-  // Agora os dois pontos já foram convertidos, então removemos vírgulas e pontos finais
-  result = result.replace(/[.,]/g, ' ');
+  // DEPOIS: Remover pontuação restante (exceto hífens entre números)
+  // Mantém apenas letras, dígitos, espaços e hífen
+  result = result.replace(/[^a-z0-9\s-]/g, ' ');
 
   // Colapsar múltiplos espaços e remover espaços no início/fim
   result = result.replace(/\s+/g, ' ').trim();

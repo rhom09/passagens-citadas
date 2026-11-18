@@ -20,7 +20,7 @@ export function validatePassage(match: RawMatch): Passage | null {
   if (verseStart === undefined) {
     return {
       bookId,
-      bookName: '', // será preenchido pelo caller
+      bookName: match.bookName,
       chapter,
       verseStart: undefined,
       verseEnd: undefined,
@@ -48,7 +48,7 @@ export function validatePassage(match: RawMatch): Passage | null {
 
   return {
     bookId,
-    bookName: '',
+    bookName: match.bookName,
     chapter,
     verseStart,
     verseEnd,

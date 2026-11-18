@@ -41,7 +41,7 @@ describe('detect — tabela de docs/03', () => {
   it('"Judas 5" → Judas 1:5', () => {
     const r = detect('Judas 5');
     expect(r).toHaveLength(1);
-    expect(r[0]).toMatchObject({ bookId: 64, chapter: 1, verseStart: 5 });
+    expect(r[0]).toMatchObject({ bookId: 65, chapter: 1, verseStart: 5 });
   });
   it('"Números 2:88" → vazio (versículo inexistente)', () => {
     expect(detect('Números 2:88')).toHaveLength(0);

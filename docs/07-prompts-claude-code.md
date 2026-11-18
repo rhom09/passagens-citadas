@@ -16,12 +16,11 @@ Leia CLAUDE.md e docs/03 e docs/04. Use a skill writing-plans para propor o plan
 e espere minha aprovação.
 Depois de aprovado, use dispatching-parallel-agents para trabalhar em paralelo em:
 (A) scripts/build-bible.ts + src/lib/bible, e (B) o detector em src/lib/detect.
-Para o detector, use a skill test-driven-development: escreva primeiro os testes com a tabela
-de casos de docs/03, veja-os falhar e só então implemente, portando a lógica de
+Para o detector, escreva os testes com a tabela de casos de docs/03, implmente a lógica de
 prototype/passagens-citadas.html, agora validando capítulo E versículo.
 Antes de converter a ARC, inspecione data/arc.source.json e mostre a estrutura real.
 Não versione o texto. Se alguma skill não estiver instalada, siga o fluxo equivalente
-(plano → aprovação; testes primeiro).
+(plano → aprovação; sem a etapa de testes-first).
 ```
 
 ## Fase 2
@@ -52,13 +51,13 @@ src/lib/speech/deepgram.ts e /api/voice-token mantendo a interface SpeechProvide
 ```
 Use a skill brainstorming para comparar abordagens de busca de trecho falado (índice léxico
 no cliente vs embeddings) para RF-08, com prós, contras e custo. Espere minha escolha.
-Depois implemente com a skill test-driven-development, com limiar de confiança e testes com
+Depois implemente sem a etapa de testes-first, com limiar de confiança e testes com
 20 versículos comuns.
 ```
 
 ## Fase 6 — contexto e refinamentos
 ```
-Use test-driven-development e a skill do projeto adicionar-caso-de-deteccao para implementar
+Use a skill adicionar-caso-de-deteccao para implementar
 RF-09 (contexto de capítulo), ordem invertida ("capítulo 3 versículo 16 de João") e aliases,
 cada um com casos novos em docs/03 e nos testes.
 ```

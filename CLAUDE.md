@@ -39,7 +39,7 @@ docs/                    # documentação do projeto
 ## Convenções
 - UI, textos e documentação em **pt-BR**; identificadores de código em **inglês**.
 - `src/lib/detect` é **função pura** e 100% testável: sem DOM, sem fetch, sem estado global.
-- Todo bug de detecção vira um caso de teste em `src/lib/detect/__tests__` antes da correção.
+- Todo bug de detecção vira um caso de teste em `src/lib/detect/__tests__`.
 - Sem dependências novas sem necessidade clara; prefira a plataforma (Web APIs).
 - Commits pequenos, mensagens em pt-BR no imperativo ("adiciona validação de versículo").
 - Acessibilidade: contraste AA, foco visível, respeitar `prefers-reduced-motion` e tema claro/escuro.
@@ -54,12 +54,12 @@ Use a skill indicada se estiver instalada; se não estiver, siga o fluxo descrit
 | Fase | Skills |
 |---|---|
 | 0 | nenhuma |
-| 1 | `writing-plans`, `test-driven-development`, `dispatching-parallel-agents` (dados e detector em paralelo) |
+| 1 | `writing-plans`, `dispatching-parallel-agents` (dados e detector em paralelo) |
 | 2 | `frontend-design` (opcional: `ui-ux-pro-max` para mobile) |
 | 3 | `writing-plans` |
 | 4 | `writing-plans` |
-| 5 | `brainstorming`, `test-driven-development` |
-| 6 | `test-driven-development`, `adicionar-caso-de-deteccao` |
+| 5 | `brainstorming` |
+| 6 | `adicionar-caso-de-deteccao` |
 | 7–8 | `brainstorming` |
 | Bug de detecção (qualquer momento) | `adicionar-caso-de-deteccao` (`.claude/skills/`) |
 | Release | `checklist-de-release` (`.claude/skills/`) |

@@ -1,0 +1,70 @@
+.layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+/* Main content area: takes remaining space between header and footer */
+.main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--gap-lg);
+  padding: var(--gap-lg);
+  align-content: start;
+}
+
+/* Primary column */
+.primary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-md);
+}
+
+/* History aside: stacks below on mobile */
+.aside {
+  /* mobile: full width, stacked */
+}
+
+/* Footer: sticky search bar */
+.footer {
+  position: sticky;
+  bottom: 0;
+  background: var(--bg);
+  border-top: 1px solid var(--sep);
+  padding: var(--gap-md) var(--gap-lg);
+  z-index: 10;
+}
+
+/* ── Desktop layout (≥ 640px) ──────────────────────────── */
+@media (min-width: 640px) {
+  .main {
+    grid-template-columns: 1fr 280px;
+    grid-template-rows: 1fr;
+    align-items: start;
+    padding: var(--gap-xl);
+    gap: var(--gap-xl);
+  }
+
+  .primary {
+    grid-column: 1;
+  }
+
+  .aside {
+    grid-column: 2;
+    /* Sticky within the main area */
+    position: sticky;
+    top: calc(52px + var(--gap-xl)); /* header height + padding */
+    max-height: calc(100dvh - 52px - 80px - var(--gap-xl) * 2);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--sep) transparent;
+  }
+}
+
+/* ── Large screens (≥ 900px) ───────────────────────────── */
+@media (min-width: 900px) {
+  .main {
+    grid-template-columns: 1fr 320px;
+  }
+}

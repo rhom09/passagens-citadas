@@ -9,7 +9,7 @@ Cada fase só termina quando os critérios de aceite passam.
 - **Aceite:** `pnpm dev`, `pnpm test`, `pnpm lint`, `pnpm build` funcionam.
 
 ## Fase 1 — Dados e detector
-- **Skills:** `writing-plans`, `test-driven-development`, `dispatching-parallel-agents` (script da ARC e detector em paralelo). Depois de pronto: `adicionar-caso-de-deteccao`
+- **Skills:** `writing-plans`, `dispatching-parallel-agents` (script da ARC e detector em paralelo). Depois de pronto: `adicionar-caso-de-deteccao`
 - Implementar `scripts/build-bible.ts` e `src/lib/bible` (docs/04).
 - Portar o detector do protótipo para `src/lib/detect` (docs/03) **com validação de versículo**.
 - **Aceite:** todos os casos da tabela de docs/03 em testes; "Números 2:88" rejeitado; 66 livros / 1.189 capítulos verificados.
@@ -32,7 +32,7 @@ Cada fase só termina quando os critérios de aceite passam.
 - **Aceite:** funciona no iPhone e no Android; reconexão automática; latência ≈ 2 s.
 
 ## Fase 5 — Trecho falado (RF-08)
-- **Skills:** `brainstorming`, `test-driven-development`
+- **Skills:** `brainstorming`
 - Índice léxico dos versículos no cliente; sugestões com confiança.
 - **Aceite:** ao citar um versículo sem a referência, aparece entre as 3 sugestões em testes com 20 versículos comuns; sem sugestões fracas (limiar).
 

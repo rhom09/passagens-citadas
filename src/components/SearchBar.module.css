@@ -1,0 +1,126 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-xs);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.inputWrap {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--sep);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--gap-md);
+  gap: var(--gap-sm);
+  transition: border-color 0.15s;
+}
+
+.inputWrap:focus-within {
+  border-color: var(--accent-dim);
+}
+
+.searchIcon {
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.input {
+  flex: 1;
+  height: 52px;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: var(--size-body);
+  font-family: var(--font-ui);
+  color: var(--text-primary);
+  caret-color: var(--accent);
+}
+
+.input::placeholder {
+  color: var(--text-dim);
+}
+
+.input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.inputErr {
+  /* handled via border on parent when needed */
+}
+
+.inputWrap:has(.inputErr) {
+  border-color: var(--danger);
+}
+
+.clearBtn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 0 var(--gap-xs);
+}
+
+.clearBtn:hover {
+  color: var(--text-muted);
+}
+
+/* Row with input + search button */
+.wrap {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: var(--gap-sm);
+  align-items: start;
+}
+
+.inputWrap {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.searchBtn {
+  grid-column: 2;
+  grid-row: 1;
+  height: 52px;
+  padding: 0 var(--gap-lg);
+  background: var(--accent-glow);
+  border: 1px solid var(--accent-dim);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  font-size: var(--size-sm);
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.searchBtn:hover:not(:disabled) {
+  background: rgba(107, 140, 255, 0.25);
+}
+
+.searchBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.errMsg {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  font-size: var(--size-xs);
+  color: var(--danger);
+  padding: 0 var(--gap-xs);
+}

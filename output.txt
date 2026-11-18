@@ -1,0 +1,4 @@
+Microsoft Windows [versao 10.0.26300.9974]
+(c) Microsoft Corporation. Todos os direitos reservados.
+
+c:\repos\passagens-citadas>
