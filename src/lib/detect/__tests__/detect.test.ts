@@ -60,6 +60,19 @@ describe('detect — tabela de docs/03', () => {
     expect(r).toHaveLength(1);
     expect(r[0]).toMatchObject({ bookId: 19, chapter: 119, verseStart: 176 });
   });
+  it('"segunda Tessalonicenses capítulo 2 verso 1" → 2 Tessalonicenses 2:1', () => {
+    const r = detect('segunda Tessalonicenses capítulo 2 verso 1');
+    expect(r).toHaveLength(1);
+    expect(r[0]).toMatchObject({ bookName: '2 Tessalonicenses', chapter: 2, verseStart: 1 });
+  });
+  it('"João capítulo 3 e versículo 16" → João 3:16 (conector e)', () => {
+    const r = detect('João capítulo 3 e versículo 16');
+    expect(r).toHaveLength(1);
+    expect(r[0]).toMatchObject({ bookId: 43, chapter: 3, verseStart: 16 });
+  });
+  it('"Tessalonicenses capítulo 1 versículo 1" (sem prefixo) → vazio', () => {
+    expect(detect('Tessalonicenses capítulo 1 versículo 1')).toHaveLength(0);
+  });
 });
 
 describe('detect — Review Focus extras', () => {

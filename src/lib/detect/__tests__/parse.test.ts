@@ -73,4 +73,14 @@ describe('parseReferences', () => {
     expect(r).toHaveLength(1);
     expect(r[0]).toMatchObject({ chapter: 2, verseStart: 88 });
   });
+  it('"segunda Tessalonicenses capítulo 2 verso 1" → 2 Tessalonicenses 2:1', () => {
+    const r = parseReferences('segunda Tessalonicenses capítulo 2 verso 1');
+    expect(r).toHaveLength(1);
+    expect(r[0]).toMatchObject({ bookName: '2 Tessalonicenses', chapter: 2, verseStart: 1 });
+  });
+  it('"João capítulo 3 e versículo 16" → João 3:16 (conector e)', () => {
+    const r = parseReferences('João capítulo 3 e versículo 16');
+    expect(r).toHaveLength(1);
+    expect(r[0]).toMatchObject({ bookName: 'João', chapter: 3, verseStart: 16 });
+  });
 });

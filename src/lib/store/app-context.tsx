@@ -24,7 +24,7 @@ const initialState: AppState = {
 function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
     case 'TRANSCRIPT': {
-      const { segmentId, text, passages, isFinal } = action;
+      const { segmentId, text, passages, isFinal, completedByContext } = action;
 
       // Atualiza ou cria entrada no histórico para esse segmento
       const existingIdx = state.history.findIndex((e) => e.segmentId === segmentId);
@@ -34,6 +34,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         transcript: text,
         isFinal,
         timestamp: Date.now(),
+        completedByContext,
       };
 
       let newHistory: HistoryEntry[];

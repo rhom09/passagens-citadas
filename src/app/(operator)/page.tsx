@@ -29,7 +29,7 @@ function OperatorContent() {
   const passage = highlighted?.passage ?? null;
   const verseText = bible && passage ? getPassageText(bible, passage) : undefined;
 
-  const debugSegments = state.history.map(e => ({ id: e.segmentId, text: e.transcript }));
+  const debugSegments = state.history.map(e => ({ id: e.segmentId, text: e.transcript, completedByContext: e.completedByContext }));
 
   return (
     <div className={styles.layout}>

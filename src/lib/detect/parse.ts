@@ -74,6 +74,9 @@ function buildLookup(): Map<string, ParsedBook> {
 // Singleton — rebuild once per module load
 const LOOKUP = buildLookup();
 
+/** Palavras reconhecidas como marcador de versículo */
+const VERSE_WORDS = new Set(['versiculo', 'versiculos', 'verso', 'versos', 'vers', 'v']);
+
 /**
  * Parseia texto em referências bíblicas.
  * Retorna RawMatch[] com bookId, chapter, verseStart?, verseEnd?.
@@ -200,8 +203,12 @@ export function parseReferences(text: string): RawMatch[] {
 
     // ── Versículo ──────────────────────────────────────────────────
     if (!bookEntry.singleChapter && i < tokens.length) {
-      // Pular "versiculo" ou "versículo"
-      if (tokens[i] === 'versiculo') {
+      // Pular palavra de versículo e conector "e" antes dessas palavras
+      // (ex: "capítulo 3 e versículo 16")
+      if (tokens[i] === 'e' && i + 1 < tokens.length && VERSE_WORDS.has(tokens[i + 1]!)) {
+        i++; // pular "e"
+      }
+      if (i < tokens.length && VERSE_WORDS.has(tokens[i]!)) {
         i++;
       }
 
@@ -259,5 +266,45 @@ function resolveVolumeId(baseKey: string, volume: number): number | null {
   // "corintios" → 1_corintios (id 44) ou 2_corintios (id 45)
   // "samuel" → 1_samuel (9) ou 2_samuel (10)
   // etc. — handled by the targetKey lookup above
+  return null;
+}
+
+/**
+ * Detecta se o texto contém APENAS um versículo sem livro nem capítulo.
+ * Ex: "versículo 105", "verso 3", "v 16".
+ * Retorna o número do versículo, ou null se o texto não for só um versículo.
+ * Ignora palavras de preenchimento (artigos, prep.) antes do marcador de versículo.
+ */
+export function detectVerseOnly(text: string): number | null {
+  const normalized = normalize(text);
+  const withNums = numWords(normalized);
+  const tokens = withNums.split(/\s+/).filter(Boolean);
+
+  // Palavras permitidas antes do marcador de versículo (preenchimento)
+  const FILLER = new Set(['o', 'a', 'os', 'as', 'e', 'de', 'do', 'da', 'agora', 'e', 'no', 'na']);
+
+  let i = 0;
+  // Pular palavras de preenchimento no início
+  while (i < tokens.length && FILLER.has(tokens[i]!)) {
+    i++;
+  }
+
+  // Deve encontrar uma palavra de versículo seguida de número
+  if (i < tokens.length && VERSE_WORDS.has(tokens[i]!)) {
+    i++;
+    if (i < tokens.length) {
+      const num = Number(tokens[i]);
+      if (!isNaN(num) && num > 0) {
+        // Verificar que o resto do texto (após o número) não contém um nome de livro
+        // (caso contrário não é "só versículo")
+        const remaining = tokens.slice(i + 1);
+        const hasBookToken = remaining.some((t) => LOOKUP.has(t) || ORDINAL_PREFIXES[t] !== undefined);
+        if (!hasBookToken) {
+          return num;
+        }
+      }
+    }
+  }
+
   return null;
 }

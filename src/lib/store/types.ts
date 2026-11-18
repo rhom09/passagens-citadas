@@ -6,6 +6,8 @@ export type HistoryEntry = {
   transcript: string;
   isFinal: boolean;
   timestamp: number;
+  /** true quando a passagem foi completada por contexto cruzado (RF-09) */
+  completedByContext?: boolean;
 };
 
 export type AppState = {
@@ -29,6 +31,7 @@ export type AppAction =
       text: string;
       passages: Passage[];
       isFinal: boolean;
+      completedByContext?: boolean;
     }
   | { type: 'HIGHLIGHT'; segmentId: string; passage: Passage }
   | { type: 'MIC_STATUS'; status: 'idle' | 'listening' | 'error'; error?: string }

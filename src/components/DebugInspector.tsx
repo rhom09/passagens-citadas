@@ -3,7 +3,7 @@ import { explainDetection } from '../lib/detect/validate';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 
-function DebugContent({ segments }: { segments: { id: string, text: string }[] }) {
+function DebugContent({ segments }: { segments: { id: string, text: string, completedByContext?: boolean }[] }) {
   const searchParams = useSearchParams();
   const isDebug = searchParams.get('debug') === '1';
 
@@ -16,8 +16,11 @@ function DebugContent({ segments }: { segments: { id: string, text: string }[] }
         const explanation = explainDetection(s.text);
         return (
           <div key={s.id} className="border-b border-slate-700 py-2">
-            <p className="text-yellow-400">Raw: "{explanation.rawText}"</p>
-            <p className="text-green-400">Normalized: "{explanation.normalized}"</p>
+            <p className="text-yellow-400">Raw: &quot;{explanation.rawText}&quot;</p>
+            <p className="text-green-400">Normalized: &quot;{explanation.normalized}&quot;</p>
+            {s.completedByContext && (
+              <p className="text-cyan-400 font-bold">⟳ Completado por contexto (RF-09)</p>
+            )}
             <div className="flex gap-4">
                 <span>Matches: {explanation.rawMatches.length}</span>
                 <span>Accepted: {explanation.acceptedPassages.length}</span>
@@ -35,7 +38,7 @@ function DebugContent({ segments }: { segments: { id: string, text: string }[] }
   );
 }
 
-export function DebugInspector({ segments }: { segments: { id: string, text: string }[] }) {
+export function DebugInspector({ segments }: { segments: { id: string, text: string, completedByContext?: boolean }[] }) {
   return (
     <Suspense fallback={null}>
       <DebugContent segments={segments} />
