@@ -15,6 +15,8 @@ const initialState: AppState = {
   history: [],
   highlighted: null,
   currentTranscript: '',
+  currentSegmentId: null,
+  isCurrentFinal: true,
   micStatus: 'idle',
   micError: null,
 };
@@ -56,6 +58,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
         history: newHistory,
         highlighted: newHighlighted,
         currentTranscript: isFinal ? '' : text,
+        currentSegmentId: isFinal ? null : segmentId,
+        isCurrentFinal: isFinal,
       };
     }
 

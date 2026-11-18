@@ -15,6 +15,8 @@ export type AppState = {
   highlighted: { segmentId: string; passage: Passage } | null;
   /** Texto parcial atual sendo transcrito */
   currentTranscript: string;
+  currentSegmentId: string | null;
+  isCurrentFinal: boolean;
   /** Estado do microfone */
   micStatus: 'idle' | 'listening' | 'error';
   micError: string | null;

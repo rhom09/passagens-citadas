@@ -7,6 +7,8 @@ import { ReferenceCard } from '../../components/ReferenceCard';
 import { HistoryList } from '../../components/HistoryList';
 import { TranscriptBar } from '../../components/TranscriptBar';
 import { SearchBar } from '../../components/SearchBar';
+import { TranscriptStabilizer } from '../../components/TranscriptStabilizer';
+import { DebugInspector } from '../../components/DebugInspector';
 import { useAppStore } from '../../lib/store/app-context';
 import { loadBible, getPassageText } from '../../lib/bible/loader';
 import type { Bible } from '../../lib/bible/types';
@@ -27,10 +29,13 @@ function OperatorContent() {
   const passage = highlighted?.passage ?? null;
   const verseText = bible && passage ? getPassageText(bible, passage) : undefined;
 
+  const debugSegments = state.history.map(e => ({ id: e.segmentId, text: e.transcript }));
+
   return (
     <div className={styles.layout}>
+      <TranscriptStabilizer />
+      <DebugInspector segments={debugSegments} />
       <StatusBar />
-
       <main className={styles.main}>
         {/* Primary column: highlighted passage */}
         <div className={styles.primary}>

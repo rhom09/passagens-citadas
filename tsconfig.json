@@ -22,6 +22,11 @@
     "noEmit": true,
     "moduleDetection": "force",
     "incremental": true,
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
     "plugins": [
       {
         "name": "next"

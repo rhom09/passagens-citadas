@@ -29,7 +29,8 @@ export function useSpeechControl() {
     });
 
     provider.onTranscript(async ({ segmentId, text, isFinal }) => {
-      const passages = await detectPassages(text);
+      // detect apenas se for final, para não interferir na estabilização
+      const passages = isFinal ? await detectPassages(text) : [];
       dispatch({
         type: 'TRANSCRIPT',
         segmentId,
