@@ -27,11 +27,26 @@ function DebugContent({ segments }: { segments: { id: string, text: string, comp
                 <span>Matches: {explanation.rawMatches.length}</span>
                 <span>Accepted: {explanation.acceptedPassages.length}</span>
                 <span>Rejected: {explanation.rejectedPassages.length}</span>
+                {explanation.ambiguousMatches.length > 0 && (
+                  <span className="text-orange-400">Ambíguos: {explanation.ambiguousMatches.length}</span>
+                )}
             </div>
             {explanation.rejectedPassages.length > 0 && (
                 <div className="text-red-400">
                     Rejections: {explanation.rejectedPassages.map(p => p.reason).join(', ')}
                 </div>
+            )}
+            {explanation.validatedAmbiguous.length > 0 && (
+              <div className="text-orange-400 mt-1">
+                Sugestões ambíguas (livro numerado sem ordinal):
+                {explanation.validatedAmbiguous.map((group) => (
+                  <div key={group.baseBookName} className="pl-2">
+                    {group.baseBookName}: {group.validCandidates.map(p =>
+                      `${p.bookName} ${p.chapter}${p.verseStart ? ':' + p.verseStart : ''}`
+                    ).join(' | ')}
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         );

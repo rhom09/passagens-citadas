@@ -20,7 +20,15 @@ O protótipo valida só o capítulo, não o versículo. Exemplo real de teste: f
 - **Conectores:** Aceita até 3 palavras de ligação ("carta", "epístola", "a", "de", "ao", etc.) entre prefixo ordinal e livro.
 - **Contexto (RF-09):** Frases do tipo "versículo N" completam a passagem anterior (se houver capítulo citado) dentro de uma janela de 15 segundos.
 - **Descarte de intervalo:** Se o versículo final for inválido (ex: menor que o inicial, ou inexistente), a detecção descarta o final e considera apenas o inicial (se válido).
-- **Descarte de livro numerado:** Livros numerados sem prefixo (ex: "Tessalonicenses 1:1") são rejeitados de propósito.
+- **Livro numerado sem prefixo:** Citações como "Tessalonicenses 1:1" geram **sugestões ambíguas** (nunca vão ao destaque sozinhas). O operador toca em uma das sugestões para promover. "João" sem prefixo continua sendo o Evangelho.
+- **Ordem invertida:** "capítulo N versículo M de LIVRO" é detectada. Para livros numerados em ordem invertida, o prefixo ordinal continua sendo exigido para evitar falso positivo (ex: "capítulo 2 versículo 3 da segunda carta aos Tessalonicenses" → 2 Tessalonicenses 2:3).
+- **Aliases de transcrição:** Variantes de pronúncia/transcrição mapeiam para a forma canônica:
+  - Habacuc → Habacuque
+  - Oseas → Oséias
+  - Filemon → Filemom
+  - Cânticos/Canticos → Cantares
+  - Atos dos Apóstolos → Atos
+  - Para adicionar nova variante: normalize (minúsculas, sem acentos) e insira em `TRANSCRIPTION_ALIASES` em `src/lib/detect/parse.ts`.
 
 ## Casos de teste (mínimo)
 | Entrada | Esperado |
@@ -41,18 +49,23 @@ O protótipo valida só o capítulo, não o versículo. Exemplo real de teste: f
 | parcial "joão 3" → depois "joão 3 16" | substitui no mesmo segmento, resultado final João 3:16 |
 | "segunda Tessalonicenses capítulo 2 verso 1" | 2 Tessalonicenses 2:1 |
 | "João capítulo 3 e versículo 16" | João 3:16 |
-| "Tessalonicenses capítulo 1 versículo 1" | nenhuma (livro numerado exige prefixo) |
+| "Tessalonicenses capítulo 1 versículo 1" | sugestões ambíguas (1 Tess 1:1 e 2 Tess 1:1) |
 | "Salmos 119" → "versículo 105" (completar por contexto) | Salmos 119:105 |
 | "segunda a Tessalonicenses capítulo 2 versos 3" | 2 Tessalonicenses 2:3 |
 | "segunda carta aos Tessalonicenses capítulo 2 verso 3" | 2 Tessalonicenses 2:3 |
 | "primeira epístola de Pedro 1:3" | 1 Pedro 1:3 |
 | "primeira de João 4:8" | 1 João 4:8 |
 | "verso 5" (após contexto) | (ex: Salmos 23:5) |
+| "capítulo 3 versículo 16 de João" | João 3:16 (ordem invertida) |
+| "capítulo 8 de Romanos" | Romanos 8 (ordem invertida) |
+| "capítulo 2 versículo 3 da segunda carta aos Tessalonicenses" | 2 Tessalonicenses 2:3 |
+| "Habacuc 3:17" | Habacuque 3:17 (alias de transcrição) |
+| "Oseas 2:1" | Oséias 2:1 (alias de transcrição) |
+| "Filemon 10" | Filemom 1:10 (alias de transcrição + capítulo único) |
+| "Canticos 1:2" | Cantares 1:2 (alias de transcrição) |
+| "Coríntios 13:4" | sugestões ambíguas (1 e 2 Coríntios 13:4) |
 
 ## Melhorias planejadas
-- Ordem invertida: "capítulo 3, versículo 16 de João".
-- Contexto: "versículo 5" usa o último capítulo/livro citado (RF-09).
-- Variações de transcrição (Habacuque/Habacuc, Oseias/Oseas, Filemom/Filemon) via tabela de aliases.
 - Busca manual separada com abreviações (`jo` = João, `jó` = Jó, `rm`, `1co`, `sl`): tabela própria, sem conflito com a fala.
 - Detecção de **trecho falado** (RF-08): índice léxico (tokens normalizados, BM25 ou similar) sobre os versículos, com limiar de confiança e mostrando as 2–3 melhores sugestões. Embeddings só se o léxico não bastar.
 

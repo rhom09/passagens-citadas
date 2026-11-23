@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { AppProvider } from '../../lib/store/app-context';
 import { StatusBar } from '../../components/StatusBar';
 import { ReferenceCard } from '../../components/ReferenceCard';
@@ -9,14 +9,16 @@ import { TranscriptBar } from '../../components/TranscriptBar';
 import { SearchBar } from '../../components/SearchBar';
 import { TranscriptStabilizer } from '../../components/TranscriptStabilizer';
 import { DebugInspector } from '../../components/DebugInspector';
+import { AmbiguousSuggestions } from '../../components/AmbiguousSuggestions';
 import { useAppStore } from '../../lib/store/app-context';
 import { useWakeLock } from '../../hooks/useWakeLock';
 import { loadBible, getPassageText } from '../../lib/bible/loader';
+import type { Passage } from '../../lib/detect/types';
 import type { Bible } from '../../lib/bible/types';
 import styles from './page.module.css';
 
 function OperatorContent() {
-  const { state } = useAppStore();
+  const { state, dispatch } = useAppStore();
   const { highlighted, micStatus } = state;
   const [bible, setBible] = useState<Bible | null>(null);
 
@@ -40,6 +42,11 @@ function OperatorContent() {
     passages: e.passages
   }));
 
+  // Promover sugestão ambígua: gera um segmento manual com a passagem escolhida
+  const handlePromote = useCallback((p: Passage) => {
+    dispatch({ type: 'MANUAL_RESULT', passage: p });
+  }, [dispatch]);
+
   return (
     <div className={styles.layout}>
       <TranscriptStabilizer />
@@ -48,6 +55,7 @@ function OperatorContent() {
       <main className={styles.main}>
         {/* Primary column: highlighted passage */}
         <div className={styles.primary}>
+          <AmbiguousSuggestions onPromote={handlePromote} />
           <ReferenceCard passage={passage} verseText={verseText} />
           <TranscriptBar />
         </div>

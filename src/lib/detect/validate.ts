@@ -1,6 +1,7 @@
 import { verseCount, chapterCount } from '../bible/counts';
-import { parseReferences } from './parse';
-import type { RawMatch, Passage } from './types';
+import { normalize } from './normalize';
+import { parseReferences, parseReferencesWithAmbiguous } from './parse';
+import type { RawMatch, Passage, AmbiguousMatch } from './types';
 
 /**
  * Valida um RawMatch contra as contagens da bíblia.
@@ -74,16 +75,18 @@ export interface DetectionExplanation {
   rawMatches: RawMatch[];
   acceptedPassages: Passage[];
   rejectedPassages: { match: RawMatch; reason: string }[];
+  /** Sugestões de livro numerado sem ordinal — operador escolhe qual promover */
+  ambiguousMatches: AmbiguousMatch[];
+  /** Candidatos validados de cada sugestão ambígua */
+  validatedAmbiguous: { baseBookName: string; validCandidates: Passage[] }[];
 }
-
-import { normalize } from './normalize';
 
 /**
  * Pipeline de explicação para debug.
  */
 export function explainDetection(text: string): DetectionExplanation {
-  const normalized = normalize(text);
-  const matches = parseReferences(text);
+  const norm = normalize(text);
+  const { matches, ambiguous } = parseReferencesWithAmbiguous(text);
   const acceptedPassages: Passage[] = [];
   const rejectedPassages: { match: RawMatch; reason: string }[] = [];
 
@@ -96,12 +99,22 @@ export function explainDetection(text: string): DetectionExplanation {
     }
   }
 
+  // Validar candidatos de sugestões ambíguas
+  const validatedAmbiguous = ambiguous.map((amb) => ({
+    baseBookName: amb.baseBookName,
+    validCandidates: amb.candidates
+      .map((c) => validatePassage(c))
+      .filter((p): p is Passage => p !== null),
+  }));
+
   return {
     rawText: text,
-    normalized,
+    normalized: norm,
     rawMatches: matches,
     acceptedPassages,
     rejectedPassages,
+    ambiguousMatches: ambiguous,
+    validatedAmbiguous,
   };
 }
 
@@ -120,4 +133,35 @@ export function detect(text: string): Passage[] {
   }
 
   return passages;
+}
+
+export interface DetectWithAmbiguousResult {
+  passages: Passage[];
+  /** Sugestões de livro numerado sem ordinal, já filtradas pelas que existem na bíblia */
+  ambiguous: { baseBookName: string; validCandidates: Passage[] }[];
+}
+
+/**
+ * Versão estendida de detect que também retorna sugestões ambíguas (livro numerado sem ordinal).
+ * Usado pela UI para exibir sugestões secundárias que o operador pode promover.
+ */
+export function detectWithAmbiguous(text: string): DetectWithAmbiguousResult {
+  const { matches, ambiguous } = parseReferencesWithAmbiguous(text);
+  const passages: Passage[] = [];
+
+  for (const match of matches) {
+    const passage = validatePassage(match);
+    if (passage !== null) passages.push(passage);
+  }
+
+  const validatedAmbiguous = ambiguous
+    .map((amb) => ({
+      baseBookName: amb.baseBookName,
+      validCandidates: amb.candidates
+        .map((c) => validatePassage(c))
+        .filter((p): p is Passage => p !== null),
+    }))
+    .filter((a) => a.validCandidates.length > 0);
+
+  return { passages, ambiguous: validatedAmbiguous };
 }

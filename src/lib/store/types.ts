@@ -8,6 +8,8 @@ export type HistoryEntry = {
   timestamp: number;
   /** true quando a passagem foi completada por contexto cruzado (RF-09) */
   completedByContext?: boolean;
+  /** Sugestões de livros numerados sem ordinal: operador toca para promover */
+  ambiguous?: { baseBookName: string; validCandidates: Passage[] }[];
 };
 
 export type AppState = {
@@ -32,6 +34,7 @@ export type AppAction =
       passages: Passage[];
       isFinal: boolean;
       completedByContext?: boolean;
+      ambiguous?: { baseBookName: string; validCandidates: Passage[] }[];
     }
   | { type: 'HIGHLIGHT'; segmentId: string; passage: Passage }
   | { type: 'MIC_STATUS'; status: 'idle' | 'listening' | 'error'; error?: string }

@@ -129,5 +129,27 @@ export function buildBookLookup(): Map<string, { bookInfo: BookInfo; isNumbered:
   const obadias = BOOKS.find((b) => b.id === 31)!;
   lookup.set('oba', { bookInfo: obadias, isNumbered: false });
 
+  // ── Aliases de transcrição ──────────────────────────────────────────────
+  // Para adicionar novas variantes encontradas no DebugInspector:
+  //   1. Normalize a variante (minúsculas, sem acentos): ex. "habacuc" → "habacuc"
+  //   2. Adicione uma linha: TRANSCRIPTION_ALIASES['habacuc'] = 'habacuque';
+  //   3. O loop abaixo copia automaticamente a entrada canônica para a variante.
+  const TRANSCRIPTION_ALIASES: Record<string, string> = {
+    habacuc:                'habacuque',  // Habacuque / Habacuc
+    oseas:                  'oseias',     // Oséias / Oseas
+    filemon:                'filemom',    // Filemom / Filemon
+    canticos:               'cantares',   // Cânticos / Cantares
+    'cantares de salomao':  'cantares',   // Cantares de Salomão
+    'cantico dos canticos': 'cantares',   // Cântico dos Cânticos
+    'atos dos apostolos':   'atos',       // Atos dos Apóstolos
+  };
+
+  for (const [alias, canonical] of Object.entries(TRANSCRIPTION_ALIASES)) {
+    if (!lookup.has(alias)) {
+      const entry = lookup.get(canonical);
+      if (entry) lookup.set(alias, entry);
+    }
+  }
+
   return lookup;
 }

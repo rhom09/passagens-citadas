@@ -1,7 +1,7 @@
 import { normalize } from './normalize';
 import { numWords } from './numbers';
 import { BOOKS } from './books';
-import type { RawMatch } from './types';
+import type { RawMatch, AmbiguousMatch } from './types';
 
 /** Mapa de prefixo ordinal spoken → volume number */
 const ORDINAL_PREFIXES: Record<string, number> = {
@@ -17,6 +17,19 @@ interface ParsedBook {
   isNumbered: boolean;
   singleChapter: boolean;
 }
+
+// ── Aliases de transcrição ────────────────────────────────────────────────────
+// Para adicionar novas variantes encontradas no DebugInspector:
+//   1. Normalize a variante (minúsculas, sem acentos): ex. "habacuc"
+//   2. Adicione: TRANSCRIPTION_ALIASES['habacuc'] = 'habacuque';
+//   3. O buildLookup() abaixo inclui automaticamente.
+const TRANSCRIPTION_ALIASES: Record<string, string> = {
+  habacuc:                'habacuque',  // Habacuque / Habacuc
+  oseas:                  'oseias',     // Oséias / Oseas
+  filemon:                'filemom',    // Filemom / Filemon
+  canticos:               'cantares',   // Cânticos / Cantares
+  'atos dos apostolos':   'atos',       // Atos dos Apóstolos
+};
 
 /** Constrói lookup: normalized token → ParsedBook */
 function buildLookup(): Map<string, ParsedBook> {
@@ -68,6 +81,14 @@ function buildLookup(): Map<string, ParsedBook> {
     });
   }
 
+  // Aliases de transcrição
+  for (const [alias, canonical] of Object.entries(TRANSCRIPTION_ALIASES)) {
+    if (!lookup.has(alias)) {
+      const entry = lookup.get(canonical);
+      if (entry) lookup.set(alias, { ...entry });
+    }
+  }
+
   return lookup;
 }
 
@@ -77,9 +98,111 @@ const LOOKUP = buildLookup();
 /** Palavras reconhecidas como marcador de versículo */
 const VERSE_WORDS = new Set(['versiculo', 'versiculos', 'verso', 'versos', 'vers', 'v']);
 
+/** Conectores entre ordinal e livro (ou dentro da expressão do livro) */
+const CONNECTORS = ['carta', 'cartas', 'epistola', 'epistolas', 'a', 'as', 'ao', 'aos', 'de', 'do', 'da', 'dos', 'das'];
+
+/**
+ * Extrai { chapter, verseStart?, verseEnd? } a partir da posição i nos tokens.
+ * Retorna null se não houver número de capítulo.
+ * Avança i e devolve o novo índice.
+ */
+function extractChapterVerse(
+  tokens: string[],
+  startI: number,
+  singleChapter: boolean,
+): { chapter: number; verseStart?: number; verseEnd?: number; nextI: number } | null {
+  let i = startI;
+
+  // Pular "capitulo" opcional
+  if (i < tokens.length && tokens[i] === 'capitulo') i++;
+
+  if (i >= tokens.length) return null;
+  const chapNum = Number(tokens[i]);
+  if (isNaN(chapNum) || chapNum <= 0) return null;
+
+  let chapter = chapNum;
+  i++;
+
+  let verseStart: number | undefined;
+  let verseEnd: number | undefined;
+
+  // Para livro de capítulo único: o número é o versículo, não capítulo
+  if (singleChapter) {
+    verseStart = chapter;
+    chapter = 1;
+    return { chapter, verseStart, nextI: i };
+  }
+
+  // Versículo opcional
+  if (i < tokens.length) {
+    // Pular "e versiculo" como conector
+    if (tokens[i] === 'e' && i + 1 < tokens.length && VERSE_WORDS.has(tokens[i + 1]!)) {
+      i++;
+    }
+    if (i < tokens.length && VERSE_WORDS.has(tokens[i]!)) {
+      i++;
+    }
+
+    if (i < tokens.length) {
+      const verseNum = Number(tokens[i]);
+      if (!isNaN(verseNum) && verseNum > 0) {
+        verseStart = verseNum;
+        i++;
+
+        // Intervalo: "ao N"
+        if (i < tokens.length && (tokens[i] === 'ao' || tokens[i] === 'ate' || tokens[i] === 'a')) {
+          i++;
+          if (i < tokens.length) {
+            const endNum = Number(tokens[i]);
+            if (!isNaN(endNum) && endNum > 0) {
+              verseEnd = endNum;
+              i++;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return { chapter, verseStart, verseEnd, nextI: i };
+}
+
+/**
+ * Dado a base key de um livro (ex: "joao", "samuel", "corintios")
+ * e um volume ordinal (1, 2, 3), retorna o bookId correto.
+ * Retorna null se o volume não existe para esse livro.
+ */
+function resolveVolumeId(baseKey: string, volume: number): number | null {
+  const targetKey = `${volume}_${baseKey}`;
+  const book = BOOKS.find((b) => b.normalizedRootKey === targetKey);
+  if (book) return book.id;
+
+  if (baseKey === 'joao') {
+    const joaoMap: Record<number, number> = { 1: 62, 2: 63, 3: 64 };
+    return joaoMap[volume] ?? null;
+  }
+
+  return null;
+}
+
+/** Constrói bookName correto para epístolas de João com volume */
+function resolveBookName(resolvedId: number, fallbackName: string): string {
+  if (resolvedId >= 62 && resolvedId <= 64) {
+    const names: Record<number, string> = { 62: '1 João', 63: '2 João', 64: '3 João' };
+    return names[resolvedId]!;
+  }
+  return fallbackName;
+}
+
+/** Resultado do parser: referências confirmadas + ambíguas (livro numerado sem ordinal) */
+export interface ParseResult {
+  matches: RawMatch[];
+  ambiguous: AmbiguousMatch[];
+}
+
 /**
  * Parseia texto em referências bíblicas.
- * Retorna RawMatch[] com bookId, chapter, verseStart?, verseEnd?.
+ * Retorna { matches, ambiguous }.
  *
  * Padrões reconhecidos (após normalize + numWords):
  *   joao 3 versiculo 16
@@ -89,30 +212,55 @@ const VERSE_WORDS = new Set(['versiculo', 'versiculos', 'verso', 'versos', 'vers
  *   1 corintios 13 versiculo 4 ao 7
  *   judas 5          → Judas 1:5 (capítulo único)
  *   2 timoteo 3 16
+ *   capitulo 3 versiculo 16 de joao    ← ordem invertida
+ *   capitulo 8 de romanos              ← ordem invertida
+ *   tessalonicenses 1 1                ← ambíguo (sem ordinal)
  */
 export function parseReferences(text: string): RawMatch[] {
+  return _parse(text).matches;
+}
+
+/**
+ * Versão completa que também retorna sugestões ambíguas.
+ * Usada pelo pipeline de detecção e pelo DebugInspector.
+ */
+export function parseReferencesWithAmbiguous(text: string): ParseResult {
+  return _parse(text);
+}
+
+function _parse(text: string): ParseResult {
   const normalized = normalize(text);
   const withNums = numWords(normalized);
   const tokens = withNums.split(/\s+/).filter(Boolean);
-  const results: RawMatch[] = [];
+  const matches: RawMatch[] = [];
+  const ambiguous: AmbiguousMatch[] = [];
 
   let i = 0;
   while (i < tokens.length) {
-    // ── Tentar casar um prefixo ordinal + livro ──────────────────────
+    // ── Padrão de ORDEM INVERTIDA ────────────────────────────────────────
+    // "capitulo N [versiculo M] [de|do|da] LIVRO"
+    if (tokens[i] === 'capitulo') {
+      const invertedResult = tryInvertedOrder(tokens, i);
+      if (invertedResult !== null) {
+        matches.push(invertedResult.match);
+        i = invertedResult.nextI;
+        continue;
+      }
+      // Não casou: deixar o token "capitulo" ser consumido normalmente abaixo
+    }
+
+    // ── Tentar casar um prefixo ordinal + livro ──────────────────────────
     let ordinalVolume: number | null = null;
     let bookEntry: ParsedBook | undefined;
     let consumed = 0;
 
-    // Padrão: [ordinal] ["de"/"do"/"dos"/"aos"/"carta"] LIVRO
-    // Checar se tokens[i] é um ordinal
     const tok0 = tokens[i]!;
     if (ORDINAL_PREFIXES[tok0] !== undefined) {
       ordinalVolume = ORDINAL_PREFIXES[tok0]!;
       let j = i + 1;
 
-      // Pular conectores opcionais: "carta", "epistola", "a", "de", "do", etc. (até 3 palavras)
+      // Pular conectores opcionais (até 3 palavras)
       let skipped = 0;
-      const CONNECTORS = ['carta', 'cartas', 'epistola', 'epistolas', 'a', 'as', 'ao', 'aos', 'de', 'do', 'da', 'dos', 'das'];
       while (j < tokens.length && CONNECTORS.includes(tokens[j]!) && skipped < 3) {
         j++;
         skipped++;
@@ -122,29 +270,18 @@ export function parseReferences(text: string): RawMatch[] {
         const candidate = tokens[j]!;
         const entry = LOOKUP.get(candidate);
         if (entry) {
-          // Encontrou livro com prefixo ordinal
-          // Resolver o bookId correto com base no volume
           const resolvedId = resolveVolumeId(candidate, ordinalVolume);
           if (resolvedId !== null) {
             const book = BOOKS.find((b) => b.id === resolvedId);
             if (book) {
-              // Construir bookName com prefixo de volume quando houver (ex: "1 João", "2 João")
-              // Para os livros de João epístolas (1Jo=62, 2Jo=63, 3Jo=64),
-              // o normalizedRootKey é '1_joao'/'2_joao'/'3_joao' mas o name é apenas 'João'.
-              // Quando temos um prefixo ordinal (1ª, 2ª, 3ª), o bookName deve ser '1 João', '2 João', etc.
-              let bookName = book.name;
-              if (resolvedId > 60 && resolvedId < 65) {
-                // resolvedId 62=1João, 63=2João, 64=3João
-                const volumeNumbers: Record<number, string> = { 62: '1 João', 63: '2 João', 64: '3 João' };
-                bookName = volumeNumbers[resolvedId];
-              }
+              const bookName = resolveBookName(resolvedId, book.name);
               bookEntry = {
                 bookId: resolvedId,
                 bookName,
                 isNumbered: book.isNumbered,
                 singleChapter: book.singleChapter,
               };
-              consumed = j + 1; // consumido até o nome do livro inclusive
+              consumed = j + 1;
             }
           }
         }
@@ -155,8 +292,14 @@ export function parseReferences(text: string): RawMatch[] {
     if (!bookEntry) {
       const entry = LOOKUP.get(tok0);
       if (entry) {
-        // Se o livro é numerado (ex: "samuel") e não veio com prefixo → rejeitar
         if (entry.isNumbered) {
+          // Livro numerado sem ordinal → sugestão ambígua
+          const ambigResult = tryAmbiguousNumbered(tokens, i, tok0, entry);
+          if (ambigResult !== null) {
+            ambiguous.push(ambigResult.ambig);
+            i = ambigResult.nextI;
+            continue;
+          }
           i++;
           continue;
         }
@@ -172,104 +315,161 @@ export function parseReferences(text: string): RawMatch[] {
 
     i = consumed;
 
-    // ── Capítulo ───────────────────────────────────────────────────
-    let chapter: number | null = null;
-    let verseStart: number | undefined;
-    let verseEnd: number | undefined;
-
-    // Próximo token: pode ser "capítulo N" ou apenas N
-    if (i < tokens.length && tokens[i] === 'capitulo') {
-      i++; // pular a palavra "capitulo"
-    }
-
-    if (i < tokens.length) {
-      const chapTok = tokens[i]!;
-      // Aceitar "N" ou "N versiculo M"
-      const chapNum = Number(chapTok);
-      if (!isNaN(chapNum) && chapNum > 0) {
-        chapter = chapNum;
-        i++;
-
-        // Para livro de capítulo único: o número é o versículo, não capítulo
-        if (bookEntry.singleChapter) {
-          verseStart = chapter;
-          chapter = 1;
-        }
-      }
-    }
-
-    if (chapter === null) {
-      // Não achou capítulo → não é uma referência válida; recuar sem incrementar
-      // (i já está no next token após o livro)
+    // ── Capítulo + versículo ──────────────────────────────────────────────
+    const cv = extractChapterVerse(tokens, i, bookEntry.singleChapter);
+    if (cv === null) {
       continue;
     }
 
-    // ── Versículo ──────────────────────────────────────────────────
-    if (!bookEntry.singleChapter && i < tokens.length) {
-      // Pular palavra de versículo e conector "e" antes dessas palavras
-      // (ex: "capítulo 3 e versículo 16")
-      if (tokens[i] === 'e' && i + 1 < tokens.length && VERSE_WORDS.has(tokens[i + 1]!)) {
-        i++; // pular "e"
-      }
-      if (i < tokens.length && VERSE_WORDS.has(tokens[i]!)) {
-        i++;
-      }
+    matches.push({
+      bookId: bookEntry.bookId,
+      bookName: bookEntry.bookName,
+      chapter: cv.chapter,
+      verseStart: cv.verseStart,
+      verseEnd: cv.verseEnd,
+    });
+    i = cv.nextI;
+  }
 
+  return { matches, ambiguous };
+}
+
+/**
+ * Tenta casar o padrão invertido: "capitulo N [versiculo M] [de|do|da] LIVRO"
+ * Retorna null se não casar.
+ */
+function tryInvertedOrder(
+  tokens: string[],
+  startI: number,
+): { match: RawMatch; nextI: number } | null {
+  let i = startI; // tokens[i] === 'capitulo'
+  i++; // pular "capitulo"
+
+  if (i >= tokens.length) return null;
+  const chapNum = Number(tokens[i]);
+  if (isNaN(chapNum) || chapNum <= 0) return null;
+  const chapter = chapNum;
+  i++;
+
+  // Versículo opcional
+  let verseStart: number | undefined;
+  let verseEnd: number | undefined;
+
+  if (i < tokens.length) {
+    if (tokens[i] === 'e' && i + 1 < tokens.length && VERSE_WORDS.has(tokens[i + 1]!)) i++;
+    if (i < tokens.length && VERSE_WORDS.has(tokens[i]!)) {
+      i++;
       if (i < tokens.length) {
-        const verseTok = tokens[i]!;
-        const verseNum = Number(verseTok);
-        if (!isNaN(verseNum) && verseNum > 0) {
-          verseStart = verseNum;
+        const vNum = Number(tokens[i]);
+        if (!isNaN(vNum) && vNum > 0) {
+          verseStart = vNum;
           i++;
-
-          // Intervalo: "ao N"
+          // Intervalo
           if (i < tokens.length && (tokens[i] === 'ao' || tokens[i] === 'ate' || tokens[i] === 'a')) {
-            i++; // pular "ao"
+            i++;
             if (i < tokens.length) {
-              const endNum = Number(tokens[i]);
-              if (!isNaN(endNum) && endNum > 0) {
-                verseEnd = endNum;
-                i++;
-              }
+              const eNum = Number(tokens[i]);
+              if (!isNaN(eNum) && eNum > 0) { verseEnd = eNum; i++; }
             }
           }
         }
       }
     }
-
-    results.push({
-      bookId: bookEntry.bookId,
-      bookName: bookEntry.bookName,
-      chapter,
-      verseStart,
-      verseEnd,
-    });
   }
 
-  return results;
+  // Pular conector: "de", "do", "da", "dos"
+  if (i < tokens.length && ['de', 'do', 'da', 'dos', 'das'].includes(tokens[i]!)) i++;
+
+  if (i >= tokens.length) return null;
+
+  // Verificar se há prefixo ordinal antes do nome do livro
+  let ordinalVolume: number | null = null;
+  if (ORDINAL_PREFIXES[tokens[i]!] !== undefined) {
+    ordinalVolume = ORDINAL_PREFIXES[tokens[i]!]!;
+    i++;
+    // Pular conectores
+    let skipped = 0;
+    while (i < tokens.length && CONNECTORS.includes(tokens[i]!) && skipped < 3) {
+      i++; skipped++;
+    }
+  }
+
+  if (i >= tokens.length) return null;
+
+  const bookToken = tokens[i]!;
+  const entry = LOOKUP.get(bookToken);
+  if (!entry) return null;
+
+  // Se livro é numerado e não teve ordinal: não casar (evitar falso positivo)
+  if (entry.isNumbered && ordinalVolume === null) return null;
+
+  let bookId = entry.bookId;
+  let bookName = entry.bookName;
+
+  if (ordinalVolume !== null) {
+    const resolvedId = resolveVolumeId(bookToken, ordinalVolume);
+    if (resolvedId === null) return null;
+    const book = BOOKS.find((b) => b.id === resolvedId);
+    if (!book) return null;
+    bookId = resolvedId;
+    bookName = resolveBookName(resolvedId, book.name);
+  }
+
+  return {
+    match: { bookId, bookName, chapter, verseStart, verseEnd },
+    nextI: i + 1,
+  };
 }
 
 /**
- * Dado a base key de um livro (ex: "joao", "samuel", "corintios")
- * e um volume ordinal (1, 2, 3), retorna o bookId correto.
- * Retorna null se o volume não existe para esse livro.
+ * Tenta produzir sugestões ambíguas quando um livro numerado é citado sem ordinal.
+ * Ex: "tessalonicenses 1 1" → sugestões [1 Tess 1:1, 2 Tess 1:1]
  */
-function resolveVolumeId(baseKey: string, volume: number): number | null {
-  // Procurar livro com normalizedRootKey = `${volume}_${baseKey}`
-  const targetKey = `${volume}_${baseKey}`;
-  const book = BOOKS.find((b) => b.normalizedRootKey === targetKey);
-  if (book) return book.id;
+function tryAmbiguousNumbered(
+  tokens: string[],
+  startI: number,
+  bookToken: string,
+  baseEntry: ParsedBook,
+): { ambig: AmbiguousMatch; nextI: number } | null {
+  // Avançar além do nome do livro
+  let i = startI + 1;
 
-  // Para "joao" com prefixo: 1 João (id 62), 2 João (id 63), 3 João (id 64)
-  if (baseKey === 'joao') {
-    const joaoMap: Record<number, number> = { 1: 62, 2: 63, 3: 64 };
-    return joaoMap[volume] ?? null;
+  // Colher capítulo + versículo (mesmo que para um match normal)
+  const cv = extractChapterVerse(tokens, i, baseEntry.singleChapter);
+  if (cv === null) return null;
+
+  i = cv.nextI;
+
+  // Descobrir quantos volumes existem para esse baseKey
+  const candidates: RawMatch[] = [];
+  for (let vol = 1; vol <= 3; vol++) {
+    const resolvedId = resolveVolumeId(bookToken, vol);
+    if (resolvedId === null) break;
+    const book = BOOKS.find((b) => b.id === resolvedId);
+    if (!book) break;
+    // resolveBookName trata especialmente 1/2/3 João (id 62-64 que têm name="João")
+    const bookName = resolveBookName(resolvedId, book.name);
+    candidates.push({
+      bookId: resolvedId,
+      bookName,
+      chapter: cv.chapter,
+      verseStart: cv.verseStart,
+      verseEnd: cv.verseEnd,
+    });
   }
 
-  // "corintios" → 1_corintios (id 44) ou 2_corintios (id 45)
-  // "samuel" → 1_samuel (9) ou 2_samuel (10)
-  // etc. — handled by the targetKey lookup above
-  return null;
+  if (candidates.length === 0) return null;
+
+  return {
+    ambig: {
+      candidates,
+      baseBookName: baseEntry.bookName,
+      chapter: cv.chapter,
+      verseStart: cv.verseStart,
+      verseEnd: cv.verseEnd,
+    },
+    nextI: i,
+  };
 }
 
 /**

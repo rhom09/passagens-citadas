@@ -32,9 +32,16 @@ Cada fase só termina quando os critérios de aceite passam.
 - **Aceite:** ao citar um versículo sem a referência, aparece entre as 3 sugestões em testes com 20 versículos comuns; sem sugestões fracas (limiar).
 
 ## Fase 6 — Contexto e refinamentos
-- **Skills:** `test-driven-development`, `adicionar-caso-de-deteccao`
-- RF-09 (contexto de capítulo), ordem invertida, aliases, copiar referência.
-- **Aceite:** novos casos em docs/03 e testes.
+- [x] RF-09 (contexto de capítulo): concluído.
+- [x] Copiar referência: concluído.
+- [x] Ordem invertida: "capítulo N versículo M de LIVRO" → passagem detectada.
+- [x] Aliases de transcrição: Habacuc/Oseas/Filemon/Canticos/Atos dos Apóstolos.
+- [x] Livro numerado sem ordinal: sugestões ambíguas (operador toca para promover; nunca vai ao destaque sozinha).
+- **Aceite:** novos casos em docs/03 e testes em `src/lib/detect/__tests__/parse.test.ts`.
+
+Pendentes menores (backlog):
+- Aliases adicionais encontrados em campo (adicionar em `TRANSCRIPTION_ALIASES` em `parse.ts`).
+- Sugestão "1 ou 2" para livros numerados já está como AmbiguousSuggestions na UI.
 
 ## Fase 7 — Integração Holyrics (opcional)
 - **Skills:** `brainstorming`

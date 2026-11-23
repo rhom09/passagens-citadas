@@ -24,3 +24,17 @@ export type RawMatch = {
   verseStart?: number;
   verseEnd?: number;
 };
+
+/**
+ * Resultado quando um livro numerado é citado SEM ordinal (ex: "Tessalonicenses 1:1").
+ * Nunca vai para o destaque sozinho — o operador toca em uma sugestão para promover.
+ * Exibido no DebugInspector como "sugestão ambígua".
+ */
+export type AmbiguousMatch = {
+  /** Livros candidatos, em ordem de id (já validados: só os que existem) */
+  candidates: RawMatch[];
+  baseBookName: string;   // ex: "Tessalonicenses"
+  chapter: number;
+  verseStart?: number;
+  verseEnd?: number;
+};

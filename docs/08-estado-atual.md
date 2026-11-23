@@ -5,18 +5,22 @@
 - Fase 1 (Dados Bíblicos & Detecção): Concluída.
 - Fase 2 (UI & Estabilização): Concluída.
 - Fase 3 (PWA/Offline): Concluída.
+- Fase 6 (Refinamentos do detector): Concluída.
 
 ## Ajustes Pós-Fases
 - Estabilização de reconhecimento via `useStabilizedPassages`:
   - 700ms para passagens com versículo (ex: "João 3:16").
   - 1500ms para passagens apenas com capítulo (ex: "João 3").
-- `DebugInspector` (`?debug=1`): Exibe os últimos 30 segmentos, incluindo `rawText`, `normalized` e, se completado por contexto, a passagem resultante.
+- `DebugInspector` (`?debug=1`): Exibe os últimos 30 segmentos, incluindo `rawText`, `normalized`, passagens aceitas/rejeitadas e sugestões ambíguas.
 - Detector:
   - Suporte a conectores (até 3 palavras) entre ordinal e livro: "segunda carta aos Tessalonicenses".
   - Suporte a "verso/versos" como marcador de versículo.
   - Completar por contexto (RF-09): "versículo N" completa a passagem do último capítulo citado, com janela de 15 segundos.
-  - Descarte: Livros numerados sem ordinal são descartados (ex: "Tessalonicenses 1:1" → nenhuma).
+  - Descarte: Livros numerados sem ordinal geram sugestões ambíguas (nunca vão ao destaque sozinhos). "João" sem prefixo continua sendo o Evangelho.
   - Descarte: Intervalos inválidos (ex: final < inicial) retornam apenas o versículo inicial.
+  - **Ordem invertida:** "capítulo N versículo M de LIVRO" é detectada. Para numerados, o ordinal ainda é exigido.
+  - **Aliases de transcrição:** Habacuc→Habacuque, Oseas→Oséias, Filemon→Filemom, Canticos→Cantares, Atos dos Apóstolos→Atos. Para adicionar: `TRANSCRIPTION_ALIASES` em `src/lib/detect/parse.ts`.
+  - **Sugestões ambíguas:** `AmbiguousSuggestions` exibe botões abaixo do ReferenceCard; operador toca para promover. `DebugInspector` mostra sugestões e candidatos validados.
 - Fase 3 (PWA & Offline):
   - Fontes locais gerenciadas via `next/font/google` com injeção de variável CSS `--font-dm-mono`.
   - Remoção do `@import` externo do Google Fonts em `globals.css`.
@@ -28,8 +32,9 @@
 ## Decisões
 - TDD estrito foi abandonado em favor de TDD orientado a casos (tabela em docs/03 + testes em `src/lib/detect/__tests__`). Todo bug vira caso de teste.
 - Função `explainDetection(rawText)` criada para facilitar depuração no `DebugInspector`.
-- A passagem sem ordinal em livro numerado é descartada por segurança; no backlog: sugerir "1 ou 2" para o operador.
+- Livros numerados sem ordinal geram sugestões ambíguas (em vez de serem descartados). O operador sempre decide qual promover.
 - PWA implementado com Service Worker nativo/manual para evitar conflitos de compatibilidade entre Serwist e Next 16 / Turbopack.
+- Aliases de transcrição em tabela única (`TRANSCRIPTION_ALIASES`) em `parse.ts`, fácil de ampliar a partir de observações do DebugInspector em campo.
 
 ## Ambiente e Armadilhas
 - Windows 11 + PowerShell + Antigravity.
@@ -46,6 +51,6 @@
 - Geração: `pnpm bible:build`.
 
 ## Backlog / Próximos Passos
-- Teste em culto real (observar dita vs apareceu vs Raw).
+- Teste em culto real (observar dita vs apareceu vs Raw); acumular variantes em `TRANSCRIPTION_ALIASES`.
 - Fase 4 (Deepgram).
 - Fase 7 (Integração Holyrics - aguardar API definitiva).
