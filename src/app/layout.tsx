@@ -1,5 +1,14 @@
 import type { Metadata, Viewport } from 'next';
+import { DM_Mono } from 'next/font/google';
+import { ServiceWorkerRegister } from '../components/ServiceWorkerRegister';
 import './globals.css';
+
+const dmMono = DM_Mono({
+  weight: ['400', '500'],
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-dm-mono',
+});
 
 export const metadata: Metadata = {
   title: 'Passagens Citadas',
@@ -21,8 +30,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR">
-      <body>{children}</body>
+    <html lang="pt-BR" className={dmMono.variable}>
+      <body>
+        <ServiceWorkerRegister />
+        {children}
+      </body>
     </html>
   );
 }

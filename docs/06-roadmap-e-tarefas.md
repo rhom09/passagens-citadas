@@ -13,10 +13,12 @@ Cada fase só termina quando os critérios de aceite passam.
   - Ajustes feitos: `useStabilizedPassages`, `DebugInspector`, `explainDetection`, conectores, "verso/versos", RF-09.
 
 ## Fase 3 — PWA
-- [ ] Fase 3 (PWA/Offline)
-- **Skills:** `writing-plans`
-- Manifest, ícones, service worker, cache dos dados, Wake Lock (docs/05).
-- **Aceite:** instalável; abre e consulta versículos offline.
+- [x] Concluída (PWA/Offline)
+  - Manifest com ícones 192, 512 e maskable (`manifest.json`).
+  - Fonte DM Mono local via `next/font/google` (sem `@import` remoto).
+  - Service worker manual (`public/sw.js`): cache-first versionado para shell e `/data/arc.v1.json`, network-only para `/api/*`.
+  - Wake Lock API (`useWakeLock`) com reativação automática em `visibilitychange` e fallback resiliente.
+  - **Aceite:** instalável; abre e consulta versículos offline.
 
 ## Fase 4 — Voz em produção
 - **Skills:** `writing-plans`

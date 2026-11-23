@@ -10,14 +10,18 @@ import { SearchBar } from '../../components/SearchBar';
 import { TranscriptStabilizer } from '../../components/TranscriptStabilizer';
 import { DebugInspector } from '../../components/DebugInspector';
 import { useAppStore } from '../../lib/store/app-context';
+import { useWakeLock } from '../../hooks/useWakeLock';
 import { loadBible, getPassageText } from '../../lib/bible/loader';
 import type { Bible } from '../../lib/bible/types';
 import styles from './page.module.css';
 
 function OperatorContent() {
   const { state } = useAppStore();
-  const { highlighted } = state;
+  const { highlighted, micStatus } = state;
   const [bible, setBible] = useState<Bible | null>(null);
+
+  // Mantém a tela acesa enquanto o microfone estiver escutando
+  useWakeLock(micStatus === 'listening');
 
   useEffect(() => {
     loadBible()
