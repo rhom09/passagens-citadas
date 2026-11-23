@@ -7,6 +7,7 @@
 - Fase 3 (PWA/Offline): Concluída.
 - Fase 5 (Trecho falado / Busca Léxica BM25): Concluída.
 - Fase 6 (Refinamentos do detector): Concluída.
+- Deploy Protegido (Docs/05): Concluído (Middleware Basic Auth + .vercelignore).
 
 ## Ajustes Pós-Fases
 - Estabilização de reconhecimento via `useStabilizedPassages`:
@@ -37,6 +38,11 @@
   - Registro de SW via `ServiceWorkerRegister` no layout raiz.
   - Web App Manifest configurado com `purpose: "any"` e `purpose: "maskable"`, cores do tema e `display: standalone`.
   - Screen Wake Lock implementado via `useWakeLock` ativado quando o microfone está escutando, com suporte à retomada no `visibilitychange`.
+- **Deploy Protegido (Docs/05):**
+  - Implementado `src/middleware.ts` com proteção HTTP Basic Auth baseada em `BASIC_AUTH_USER` e `BASIC_AUTH_PASS`.
+  - Protege todas as páginas, rotas de API, dados bíblicos (`/data/*`) e Service Worker (`/sw.js`).
+  - Metadados públicos essenciais para PWA (`/manifest.json`, `/favicon.ico` e `/icon-*.png`) liberados para não quebrar a instalação nos navegadores.
+  - Arquivo `.vercelignore` configurado para não ignorar `public/data/`, viabilizando o upload direto de `arc.v1.json` e `search-index.v1.json` via Vercel CLI (`vercel --prod`) sem versionar texto bíblico no Git.
 
 ## Decisões
 - TDD estrito foi abandonado em favor de TDD orientado a casos (tabela em docs/03 + testes em `src/lib/detect/__tests__`). Todo bug vira caso de teste.
