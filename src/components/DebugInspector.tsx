@@ -2,8 +2,19 @@
 import { explainDetection } from '../lib/detect/validate';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import type { SearchSuggestion } from '../lib/search/types';
 
-function DebugContent({ segments }: { segments: { id: string, text: string, completedByContext?: boolean, passages: any[] }[] }) {
+function DebugContent({
+  segments,
+}: {
+  segments: {
+    id: string;
+    text: string;
+    completedByContext?: boolean;
+    passages: any[];
+    textSuggestions?: SearchSuggestion[];
+  }[];
+}) {
   const searchParams = useSearchParams();
   const isDebug = searchParams.get('debug') === '1';
 
@@ -24,26 +35,39 @@ function DebugContent({ segments }: { segments: { id: string, text: string, comp
               </p>
             )}
             <div className="flex gap-4">
-                <span>Matches: {explanation.rawMatches.length}</span>
-                <span>Accepted: {explanation.acceptedPassages.length}</span>
-                <span>Rejected: {explanation.rejectedPassages.length}</span>
-                {explanation.ambiguousMatches.length > 0 && (
-                  <span className="text-orange-400">Ambíguos: {explanation.ambiguousMatches.length}</span>
-                )}
+              <span>Matches: {explanation.rawMatches.length}</span>
+              <span>Accepted: {explanation.acceptedPassages.length}</span>
+              <span>Rejected: {explanation.rejectedPassages.length}</span>
+              {explanation.ambiguousMatches.length > 0 && (
+                <span className="text-orange-400">Ambíguos: {explanation.ambiguousMatches.length}</span>
+              )}
+              {s.textSuggestions && s.textSuggestions.length > 0 && (
+                <span className="text-emerald-400 font-bold">Sugestões de Texto: {s.textSuggestions.length}</span>
+              )}
             </div>
             {explanation.rejectedPassages.length > 0 && (
-                <div className="text-red-400">
-                    Rejections: {explanation.rejectedPassages.map(p => p.reason).join(', ')}
-                </div>
+              <div className="text-red-400">
+                Rejections: {explanation.rejectedPassages.map((p) => p.reason).join(', ')}
+              </div>
             )}
             {explanation.validatedAmbiguous.length > 0 && (
               <div className="text-orange-400 mt-1">
                 Sugestões ambíguas (livro numerado sem ordinal):
                 {explanation.validatedAmbiguous.map((group) => (
                   <div key={group.baseBookName} className="pl-2">
-                    {group.baseBookName}: {group.validCandidates.map(p =>
+                    {group.baseBookName}: {group.validCandidates.map((p) =>
                       `${p.bookName} ${p.chapter}${p.verseStart ? ':' + p.verseStart : ''}`
                     ).join(' | ')}
+                  </div>
+                ))}
+              </div>
+            )}
+            {s.textSuggestions && s.textSuggestions.length > 0 && (
+              <div className="text-emerald-400 mt-1">
+                Sugestões por trecho falado (BM25):
+                {s.textSuggestions.map((sug) => (
+                  <div key={`${sug.passage.bookId}-${sug.passage.chapter}-${sug.passage.verseStart}`} className="pl-2">
+                    → {sug.passage.bookName} {sug.passage.chapter}:{sug.passage.verseStart} | score: {sug.score} | confiança: {sug.confidence} | &ldquo;{sug.snippet}&rdquo;
                   </div>
                 ))}
               </div>
@@ -55,7 +79,17 @@ function DebugContent({ segments }: { segments: { id: string, text: string, comp
   );
 }
 
-export function DebugInspector({ segments }: { segments: { id: string, text: string, completedByContext?: boolean, passages: any[] }[] }) {
+export function DebugInspector({
+  segments,
+}: {
+  segments: {
+    id: string;
+    text: string;
+    completedByContext?: boolean;
+    passages: any[];
+    textSuggestions?: SearchSuggestion[];
+  }[];
+}) {
   return (
     <Suspense fallback={null}>
       <DebugContent segments={segments} />

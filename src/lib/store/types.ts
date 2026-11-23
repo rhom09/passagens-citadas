@@ -1,4 +1,5 @@
 import type { Passage } from '../detect/types';
+import type { SearchSuggestion } from '../search/types';
 
 export type HistoryEntry = {
   segmentId: string;
@@ -10,6 +11,8 @@ export type HistoryEntry = {
   completedByContext?: boolean;
   /** Sugestões de livros numerados sem ordinal: operador toca para promover */
   ambiguous?: { baseBookName: string; validCandidates: Passage[] }[];
+  /** Sugestões de trecho falado por busca léxica (RF-08) */
+  textSuggestions?: SearchSuggestion[];
 };
 
 export type AppState = {
@@ -35,8 +38,9 @@ export type AppAction =
       isFinal: boolean;
       completedByContext?: boolean;
       ambiguous?: { baseBookName: string; validCandidates: Passage[] }[];
+      textSuggestions?: SearchSuggestion[];
     }
   | { type: 'HIGHLIGHT'; segmentId: string; passage: Passage }
   | { type: 'MIC_STATUS'; status: 'idle' | 'listening' | 'error'; error?: string }
-  | { type: 'MANUAL_RESULT'; passage: Passage }
+  | { type: 'MANUAL_RESULT'; passage: Passage; snippet?: string }
   | { type: 'CLEAR_HIGHLIGHT' };

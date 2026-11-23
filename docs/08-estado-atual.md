@@ -5,13 +5,14 @@
 - Fase 1 (Dados Bíblicos & Detecção): Concluída.
 - Fase 2 (UI & Estabilização): Concluída.
 - Fase 3 (PWA/Offline): Concluída.
+- Fase 5 (Trecho falado / Busca Léxica BM25): Concluída.
 - Fase 6 (Refinamentos do detector): Concluída.
 
 ## Ajustes Pós-Fases
 - Estabilização de reconhecimento via `useStabilizedPassages`:
   - 700ms para passagens com versículo (ex: "João 3:16").
   - 1500ms para passagens apenas com capítulo (ex: "João 3").
-- `DebugInspector` (`?debug=1`): Exibe os últimos 30 segmentos, incluindo `rawText`, `normalized`, passagens aceitas/rejeitadas e sugestões ambíguas.
+- `DebugInspector` (`?debug=1`): Exibe os últimos 30 segmentos, incluindo `rawText`, `normalized`, passagens aceitas/rejeitadas, sugestões ambíguas e sugestões de trecho falado por BM25.
 - Detector:
   - Suporte a conectores (até 3 palavras) entre ordinal e livro: "segunda carta aos Tessalonicenses".
   - Suporte a "verso/versos" como marcador de versículo.
@@ -21,10 +22,18 @@
   - **Ordem invertida:** "capítulo N versículo M de LIVRO" é detectada. Para numerados, o ordinal ainda é exigido.
   - **Aliases de transcrição:** Habacuc→Habacuque, Oseas→Oséias, Filemon→Filemom, Canticos→Cantares, Atos dos Apóstolos→Atos. Para adicionar: `TRANSCRIPTION_ALIASES` em `src/lib/detect/parse.ts`.
   - **Sugestões ambíguas:** `AmbiguousSuggestions` exibe botões abaixo do ReferenceCard; operador toca para promover. `DebugInspector` mostra sugestões e candidatos validados.
+- **Fase 5 (Trecho falado — RF-08):**
+  - Busca léxica local com BM25 próprio em `src/lib/search` (sem dependências externas).
+  - Geração de `public/data/search-index.v1.json` via `pnpm bible:build` (composto de tokens normalizados, sem stopwords e com IDF).
+  - Cache-first no Service Worker (`public/sw.js`).
+  - Execução desacoplada via Web Worker (`search.worker.ts`) e hook `useSpokenSearch` executado apenas quando não há referência explícita na fala.
+  - Limiares estritos de segurança: mínimo de 4 palavras de conteúdo em comum, score ≥ 12, margem mínima de 35% sobre 2º colocado, boost de 1.5x em n-gramas contíguos.
+  - Interface do operador: card `SpokenTextSuggestions` com destaque manual e exibição no `DebugInspector`.
+  - Script de avaliação `pnpm search:eval` para validação de meta (≥ 90% top 3, zero falsos positivos em frases de púlpito).
 - Fase 3 (PWA & Offline):
   - Fontes locais gerenciadas via `next/font/google` com injeção de variável CSS `--font-dm-mono`.
   - Remoção do `@import` externo do Google Fonts em `globals.css`.
-  - Service worker manual implementado em `public/sw.js` com precache de shell, cache-first para `/data/arc.v1.json` e rede para `/api/*`.
+  - Service worker manual implementado em `public/sw.js` com precache de shell, cache-first para `/data/arc.v1.json` e `/data/search-index.v1.json`, rede para `/api/*`.
   - Registro de SW via `ServiceWorkerRegister` no layout raiz.
   - Web App Manifest configurado com `purpose: "any"` e `purpose: "maskable"`, cores do tema e `display: standalone`.
   - Screen Wake Lock implementado via `useWakeLock` ativado quando o microfone está escutando, com suporte à retomada no `visibilitychange`.
@@ -33,6 +42,7 @@
 - TDD estrito foi abandonado em favor de TDD orientado a casos (tabela em docs/03 + testes em `src/lib/detect/__tests__`). Todo bug vira caso de teste.
 - Função `explainDetection(rawText)` criada para facilitar depuração no `DebugInspector`.
 - Livros numerados sem ordinal geram sugestões ambíguas (em vez de serem descartados). O operador sempre decide qual promover.
+- Trecho falado usa busca BM25 própria no navegador via Web Worker, sem embeddings nem serviços externos (mantendo 100% de privacidade e viabilidade offline).
 - PWA implementado com Service Worker nativo/manual para evitar conflitos de compatibilidade entre Serwist e Next 16 / Turbopack.
 - Aliases de transcrição em tabela única (`TRANSCRIPTION_ALIASES`) em `parse.ts`, fácil de ampliar a partir de observações do DebugInspector em campo.
 
@@ -47,7 +57,7 @@
 
 ## Dados
 - Local: `data/` e `public/data/` (gitignored).
-- Gerado: `src/lib/bible/counts.generated.ts` (versionado).
+- Gerado: `src/lib/bible/counts.generated.ts` (versionado), `public/data/search-index.v1.json` (gitignored).
 - Geração: `pnpm bible:build`.
 
 ## Backlog / Próximos Passos

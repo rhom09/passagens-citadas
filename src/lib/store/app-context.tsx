@@ -24,7 +24,7 @@ const initialState: AppState = {
 function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
     case 'TRANSCRIPT': {
-      const { segmentId, text, passages, isFinal, completedByContext, ambiguous } = action;
+      const { segmentId, text, passages, isFinal, completedByContext, ambiguous, textSuggestions } = action;
 
       // Atualiza ou cria entrada no histórico para esse segmento
       const existingIdx = state.history.findIndex((e) => e.segmentId === segmentId);
@@ -36,10 +36,15 @@ function appReducer(state: AppState, action: AppAction): AppState {
         timestamp: Date.now(),
         completedByContext,
         ambiguous,
+        textSuggestions,
       };
 
       let newHistory: HistoryEntry[];
       if (existingIdx >= 0) {
+        // Preservar textSuggestions anteriores caso este update não tenha recalculado
+        if (!textSuggestions && state.history[existingIdx]?.textSuggestions) {
+          entry.textSuggestions = state.history[existingIdx]!.textSuggestions;
+        }
         // Substitui o segmento existente (resultado parcial atualizado)
         newHistory = [...state.history];
         newHistory[existingIdx] = entry;
@@ -50,6 +55,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
 
       // Auto-highlight: se há passagens e o highlight atual não foi explicitamente fixado,
       // atualiza com a primeira passagem do segmento mais recente
+      // (Sugestões de texto NUNCA vão para o auto-highlight sozinhos)
       let newHighlighted = state.highlighted;
       if (passages.length > 0) {
         newHighlighted = { segmentId, passage: passages[0]! };
@@ -84,7 +90,9 @@ function appReducer(state: AppState, action: AppAction): AppState {
       const manualEntry: HistoryEntry = {
         segmentId: `manual-${Date.now()}`,
         passages: [action.passage],
-        transcript: `${action.passage.bookName} ${action.passage.chapter}`,
+        transcript: action.snippet
+          ? `${action.passage.bookName} ${action.passage.chapter}:${action.passage.verseStart || 1} ("${action.snippet}")`
+          : `${action.passage.bookName} ${action.passage.chapter}`,
         isFinal: true,
         timestamp: Date.now(),
       };

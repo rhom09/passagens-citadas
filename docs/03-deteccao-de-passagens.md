@@ -30,6 +30,20 @@ O protótipo valida só o capítulo, não o versículo. Exemplo real de teste: f
   - Atos dos Apóstolos → Atos
   - Para adicionar nova variante: normalize (minúsculas, sem acentos) e insira em `TRANSCRIPTION_ALIASES` em `src/lib/detect/parse.ts`.
 
+## Detecção de Trecho Falado (RF-08 — Busca Léxica BM25)
+Quando o orador cita o texto do versículo diretamente sem dizer a referência bíblica (ex: *"porque Deus amou o mundo de tal maneira..."*):
+- **Algoritmo:** BM25 no cliente com índice invertido e IDF pré-calculados em `public/data/search-index.v1.json` via `pnpm bible:build`.
+- **Janela deslizante:** últimas 20 palavras da fala normalizada, sem stopwords em português.
+- **Limiares de segurança (falso positivo é pior que perder detecção):**
+  1. No mínimo 4 palavras de conteúdo em comum com o versículo.
+  2. Score BM25 mínimo: 12.0.
+  3. Margem: o score do 1º colocado deve ser pelo menos 35% superior ao 2º colocado (ou score absoluto massivo).
+  4. Boost para bigramas e trigramas contíguos na mesma ordem (1.5x).
+  5. Se houver dúvida, nenhuma sugestão é emitida.
+- **Execução:** Web Worker dedicado (`src/lib/search/search.worker.ts`), sem travar a thread principal da UI.
+- **UI:** Exibido em card próprio *"📖 Sugestões pelo texto (fala)"*. **Nunca é promovido ao destaque automaticamente**; o operador deve tocar para promover.
+- **Disparo:** Executado apenas em trechos estáveis ou finais **sem** referência explícita detectada.
+
 ## Casos de teste (mínimo)
 | Entrada | Esperado |
 |---|---|
@@ -67,8 +81,7 @@ O protótipo valida só o capítulo, não o versículo. Exemplo real de teste: f
 
 ## Melhorias planejadas
 - Busca manual separada com abreviações (`jo` = João, `jó` = Jó, `rm`, `1co`, `sl`): tabela própria, sem conflito com a fala.
-- Detecção de **trecho falado** (RF-08): índice léxico (tokens normalizados, BM25 ou similar) sobre os versículos, com limiar de confiança e mostrando as 2–3 melhores sugestões. Embeddings só se o léxico não bastar.
 
 ## Regras de qualidade
-- O módulo não pode importar nada de DOM, React ou rede.
+- O módulo `src/lib/detect` e `src/lib/search` não pode importar nada de DOM, React ou rede.
 - Cada correção de bug adiciona um caso na tabela e em `__tests__`.

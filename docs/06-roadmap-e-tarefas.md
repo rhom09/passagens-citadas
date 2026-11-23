@@ -27,9 +27,14 @@ Cada fase só termina quando os critérios de aceite passam.
 - **Aceite:** funciona no iPhone e no Android; reconexão automática; latência ≈ 2 s.
 
 ## Fase 5 — Trecho falado (RF-08)
-- **Skills:** `brainstorming`
-- Índice léxico dos versículos no cliente; sugestões com confiança.
-- **Aceite:** ao citar um versículo sem a referência, aparece entre as 3 sugestões em testes com 20 versículos comuns; sem sugestões fracas (limiar).
+- [x] Concluída (Busca léxica BM25 no cliente)
+  - Índice BM25 gerado em `public/data/search-index.v1.json` via `pnpm bible:build`.
+  - Módulo puro `src/lib/search` com BM25, janela de 20 palavras e boost para n-gramas contíguos.
+  - Limiares estritos: mínimo 4 palavras em comum, score mínimo 12, margem mínima 35% sobre 2º colocado.
+  - Web Worker `search.worker.ts` + hook `useSpokenSearch` executado somente em falas sem referência explícita.
+  - Componente `SpokenTextSuggestions` com promoção manual pelo operador.
+  - Script de avaliação `pnpm search:eval` (taxa top 3 ≥ 90% e 0 falsos positivos em frases comuns).
+  - **Aceite:** aprovado nos critérios de qualidade e integrado à UI.
 
 ## Fase 6 — Contexto e refinamentos
 - [x] RF-09 (contexto de capítulo): concluído.
@@ -41,7 +46,6 @@ Cada fase só termina quando os critérios de aceite passam.
 
 Pendentes menores (backlog):
 - Aliases adicionais encontrados em campo (adicionar em `TRANSCRIPTION_ALIASES` em `parse.ts`).
-- Sugestão "1 ou 2" para livros numerados já está como AmbiguousSuggestions na UI.
 
 ## Fase 7 — Integração Holyrics (opcional)
 - **Skills:** `brainstorming`

@@ -10,6 +10,7 @@ import { SearchBar } from '../../components/SearchBar';
 import { TranscriptStabilizer } from '../../components/TranscriptStabilizer';
 import { DebugInspector } from '../../components/DebugInspector';
 import { AmbiguousSuggestions } from '../../components/AmbiguousSuggestions';
+import { SpokenTextSuggestions } from '../../components/SpokenTextSuggestions';
 import { useAppStore } from '../../lib/store/app-context';
 import { useWakeLock } from '../../hooks/useWakeLock';
 import { loadBible, getPassageText } from '../../lib/bible/loader';
@@ -39,12 +40,13 @@ function OperatorContent() {
     id: e.segmentId,
     text: e.transcript,
     completedByContext: e.completedByContext,
-    passages: e.passages
+    passages: e.passages,
+    textSuggestions: e.textSuggestions,
   }));
 
   // Promover sugestão ambígua: gera um segmento manual com a passagem escolhida
-  const handlePromote = useCallback((p: Passage) => {
-    dispatch({ type: 'MANUAL_RESULT', passage: p });
+  const handlePromote = useCallback((p: Passage, snippet?: string) => {
+    dispatch({ type: 'MANUAL_RESULT', passage: p, snippet });
   }, [dispatch]);
 
   return (
@@ -56,6 +58,7 @@ function OperatorContent() {
         {/* Primary column: highlighted passage */}
         <div className={styles.primary}>
           <AmbiguousSuggestions onPromote={handlePromote} />
+          <SpokenTextSuggestions onPromote={handlePromote} />
           <ReferenceCard passage={passage} verseText={verseText} />
           <TranscriptBar />
         </div>

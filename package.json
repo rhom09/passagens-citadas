@@ -8,6 +8,7 @@
     "test": "vitest run",
     "lint": "eslint . --ignore-pattern node_modules --ignore-pattern .next",
     "bible:build": "tsx scripts/build-bible.ts",
+    "search:eval": "tsx scripts/eval-search.ts",
     "start": "next start",
     "build": "next build"
   },

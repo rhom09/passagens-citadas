@@ -2,6 +2,7 @@
 
 import { useAppStore } from '@/lib/store/app-context';
 import { useStabilizedPassages } from '@/hooks/useStabilizedPassages';
+import { useSpokenSearch } from '@/hooks/useSpokenSearch';
 import { detectVerseOnly } from '@/lib/detect';
 import { validatePassage, detectWithAmbiguous } from '@/lib/detect/validate';
 import type { Passage } from '@/lib/detect/types';
@@ -31,9 +32,13 @@ export function TranscriptStabilizer() {
     state.currentSegmentId || '',
     state.isCurrentFinal
   );
+  const { search: searchSpoken } = useSpokenSearch();
 
   // Rastreia o timestamp do último segmento com passagem só-capítulo
   const pendingChapterRef = useRef<{ passage: Passage; timestamp: number } | null>(null);
+
+  // Rastreia última busca feita por segmento para evitar loop
+  const lastSearchedRef = useRef<{ segmentId: string; text: string }>({ segmentId: '', text: '' });
 
   useEffect(() => {
     if (!state.currentSegmentId) return;
@@ -65,7 +70,7 @@ export function TranscriptStabilizer() {
       }
     }
 
-    // ── Resultado estabilizado normal ────────────────────────────────
+    // ── Resultado estabilizado normal (com referência explícita) ─────
     if (stabilizedPassages.length > 0) {
       const allChapterOnly = stabilizedPassages.every((p) => p.verseStart === undefined);
       if (allChapterOnly) {
@@ -93,8 +98,35 @@ export function TranscriptStabilizer() {
           ambiguous: ambiguous.length > 0 ? ambiguous : undefined,
         });
       }
+      return;
     }
-  }, [stabilizedPassages, state.currentSegmentId, state.isCurrentFinal, state.currentTranscript, dispatch, state.history]);
+
+    // ── RF-08: Trecho falado (busca léxica quando NÃO há referência detectada) ──
+    // Só pesquisa se não houver passagens estabilizadas e o segmento for estável ou final
+    if (stabilizedPassages.length === 0 && state.currentTranscript.trim().length > 15) {
+      const segId = state.currentSegmentId;
+      const text = state.currentTranscript;
+
+      if (lastSearchedRef.current.segmentId === segId && lastSearchedRef.current.text === text) {
+        return;
+      }
+
+      lastSearchedRef.current = { segmentId: segId, text };
+
+      searchSpoken(segId, text).then((suggestions) => {
+        if (suggestions.length > 0) {
+          dispatch({
+            type: 'TRANSCRIPT',
+            segmentId: segId,
+            text,
+            passages: [],
+            isFinal: state.isCurrentFinal,
+            textSuggestions: suggestions,
+          });
+        }
+      });
+    }
+  }, [stabilizedPassages, state.currentSegmentId, state.isCurrentFinal, state.currentTranscript, dispatch, state.history, searchSpoken]);
 
   return null;
 }
