@@ -63,8 +63,8 @@ function HighlightedSnippet({ snippet, matchedTokens }: { snippet: string; match
 }
 
 /**
- * Exibe sugestões pelo texto falado (RF-08).
- * O operador toca para promover ao destaque. Nunca promove sozinho.
+ * Exibe sugestões pelo texto falado (RF-08 e Fase 5b).
+ * O operador toca para promover ao destaque. NUNCA promove sozinho.
  */
 export function SpokenTextSuggestions({ onPromote }: Props) {
   const { state } = useAppStore();
@@ -77,6 +77,7 @@ export function SpokenTextSuggestions({ onPromote }: Props) {
   if (!recentEntry?.textSuggestions?.length) return null;
 
   const suggestions: SearchSuggestion[] = recentEntry.textSuggestions;
+  const isAi = suggestions.some((s) => s.sourceType === 'ai');
 
   return (
     <div
@@ -84,16 +85,22 @@ export function SpokenTextSuggestions({ onPromote }: Props) {
       aria-label="Sugestões pelo texto"
       style={{
         padding: '0.6rem 0.85rem',
-        background: 'color-mix(in srgb, #10b981 12%, transparent)',
-        border: '1px solid color-mix(in srgb, #10b981 35%, transparent)',
+        background: isAi
+          ? 'color-mix(in srgb, #6366f1 12%, transparent)'
+          : 'color-mix(in srgb, #10b981 12%, transparent)',
+        border: `1px solid ${
+          isAi
+            ? 'color-mix(in srgb, #6366f1 35%, transparent)'
+            : 'color-mix(in srgb, #10b981 35%, transparent)'
+        }`,
         borderRadius: '0.5rem',
         marginBottom: '0.5rem',
         fontSize: '0.8rem',
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-        <span style={{ fontWeight: 600, color: '#10b981' }}>
-          📖 Sugestões pelo texto (fala)
+        <span style={{ fontWeight: 600, color: isAi ? '#818cf8' : '#10b981' }}>
+          {isAi ? '🤖 Sugestões pela IA (paráfrase)' : '📖 Sugestões pelo texto (fala)'}
         </span>
         <span style={{ fontSize: '0.7rem', color: 'var(--color-text-dim, #888)' }}>
           toque para destacar
@@ -114,23 +121,43 @@ export function SpokenTextSuggestions({ onPromote }: Props) {
               textAlign: 'left',
               padding: '0.4rem 0.6rem',
               borderRadius: '0.4rem',
-              border: '1px solid color-mix(in srgb, #10b981 40%, transparent)',
-              background: 'color-mix(in srgb, #10b981 8%, transparent)',
+              border: `1px solid ${
+                s.sourceType === 'ai'
+                  ? 'color-mix(in srgb, #6366f1 40%, transparent)'
+                  : 'color-mix(in srgb, #10b981 40%, transparent)'
+              }`,
+              background:
+                s.sourceType === 'ai'
+                  ? 'color-mix(in srgb, #6366f1 8%, transparent)'
+                  : 'color-mix(in srgb, #10b981 8%, transparent)',
               color: 'inherit',
               cursor: 'pointer',
               fontFamily: 'inherit',
               transition: 'background 0.15s ease',
             }}
           >
-            <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', fontWeight: 600, color: '#10b981' }}>
+            <div
+              style={{
+                display: 'flex',
+                width: '100%',
+                justifyContent: 'space-between',
+                fontWeight: 600,
+                color: s.sourceType === 'ai' ? '#a5b4fc' : '#10b981',
+              }}
+            >
               <span>{formatRef(s.passage)}</span>
               <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>
-                score {s.score} {s.hasCitationClue ? '• citação' : ''}
+                {s.sourceType === 'ai' ? '🤖 pela IA' : `score ${s.score} ${s.hasCitationClue ? '• citação' : ''}`}
               </span>
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--color-text-dim, #aaa)', marginTop: '0.15rem' }}>
               <HighlightedSnippet snippet={s.snippet} matchedTokens={s.matchedTokens} />
             </div>
+            {s.reasoning && (
+              <div style={{ fontSize: '0.7rem', color: '#818cf8', marginTop: '0.2rem', fontStyle: 'italic' }}>
+                {s.reasoning}
+              </div>
+            )}
           </button>
         ))}
       </div>

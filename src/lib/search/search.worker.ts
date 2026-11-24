@@ -1,4 +1,4 @@
-import { searchSpokenPassage } from './bm25';
+import { searchSpokenPassageWithCandidates } from './bm25';
 import type { SearchIndexData } from './types';
 
 let cachedIndex: SearchIndexData | null = null;
@@ -29,14 +29,14 @@ self.onmessage = async (e: MessageEvent<{ id: string; text: string }>) => {
     }
 
     if (!cachedIndex) {
-      self.postMessage({ id, suggestions: [] });
+      self.postMessage({ id, suggestions: [], candidates: [] });
       return;
     }
 
-    const suggestions = searchSpokenPassage(text, cachedIndex);
-    self.postMessage({ id, suggestions });
+    const result = searchSpokenPassageWithCandidates(text, cachedIndex);
+    self.postMessage({ id, suggestions: result.suggestions, candidates: result.candidates });
   } catch (err) {
     console.error('Erro no SearchWorker:', err);
-    self.postMessage({ id, suggestions: [] });
+    self.postMessage({ id, suggestions: [], candidates: [] });
   }
 };

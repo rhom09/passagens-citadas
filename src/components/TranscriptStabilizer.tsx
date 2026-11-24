@@ -3,9 +3,11 @@
 import { useAppStore } from '@/lib/store/app-context';
 import { useStabilizedPassages } from '@/hooks/useStabilizedPassages';
 import { useSpokenSearch } from '@/hooks/useSpokenSearch';
+import { useAiIdentify } from '@/hooks/useAiIdentify';
 import { detectVerseOnly } from '@/lib/detect';
 import { validatePassage, detectWithAmbiguous } from '@/lib/detect/validate';
-import { RECENT_SEGMENTS_BUFFER_WORDS, BUFFER_EXPIRY_MS } from '@/lib/search/constants';
+import { RECENT_SEGMENTS_BUFFER_WORDS, BUFFER_EXPIRY_MS, PORTUGUESE_STOPWORDS } from '@/lib/search/constants';
+import { extractCitationClue } from '@/lib/search/citationClues';
 import type { Passage } from '@/lib/detect/types';
 import { useEffect, useRef } from 'react';
 
@@ -34,6 +36,7 @@ export function TranscriptStabilizer() {
     state.isCurrentFinal
   );
   const { search: searchSpoken } = useSpokenSearch();
+  const { config: aiConfig, requestIdentify } = useAiIdentify();
 
   // Rastreia o timestamp do último segmento com passagem só-capítulo
   const pendingChapterRef = useRef<{ passage: Passage; timestamp: number } | null>(null);
@@ -152,7 +155,7 @@ export function TranscriptStabilizer() {
 
       lastSearchedRef.current = { segmentId: segId, text: combinedText };
 
-      searchSpoken(segId, combinedText).then((suggestions) => {
+      searchSpoken(segId, combinedText).then(async ({ suggestions, candidates }) => {
         if (suggestions.length > 0) {
           dispatch({
             type: 'TRANSCRIPT',
@@ -162,10 +165,50 @@ export function TranscriptStabilizer() {
             isFinal: state.isCurrentFinal,
             textSuggestions: suggestions,
           });
+          return;
+        }
+
+        // ── Fase 5b: Camada de IA opcional quando BM25 não sugeriu nada ────
+        if (aiConfig.enabled) {
+          const { hasClue } = extractCitationClue(combinedText);
+          const words = combinedText.split(/\s+/).filter(Boolean);
+          const contentWordsCount = words.filter((w) => w.length > 1 && !PORTUGUESE_STOPWORDS.has(w.toLowerCase())).length;
+
+          // Gatilho: pista de citação OU ≥ 8 palavras de conteúdo
+          if (hasClue || contentWordsCount >= 8) {
+            const aiSnippet = words.slice(-30).join(' '); // últimas ~30 palavras
+            const aiSuggestion = await requestIdentify(
+              aiSnippet,
+              candidates,
+              () => recentWordsBufferRef.current.words.join(' ') + ' ' + state.currentTranscript
+            );
+
+            // Confere se ainda estamos no mesmo segmento após o retorno da IA
+            if (aiSuggestion && state.currentSegmentId === segId) {
+              dispatch({
+                type: 'TRANSCRIPT',
+                segmentId: segId,
+                text: currentText,
+                passages: [],
+                isFinal: state.isCurrentFinal,
+                textSuggestions: [aiSuggestion],
+              });
+            }
+          }
         }
       });
     }
-  }, [stabilizedPassages, state.currentSegmentId, state.isCurrentFinal, state.currentTranscript, dispatch, state.history, searchSpoken]);
+  }, [
+    stabilizedPassages,
+    state.currentSegmentId,
+    state.isCurrentFinal,
+    state.currentTranscript,
+    dispatch,
+    state.history,
+    searchSpoken,
+    aiConfig.enabled,
+    requestIdentify,
+  ]);
 
   return null;
 }

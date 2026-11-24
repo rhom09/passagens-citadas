@@ -15,7 +15,7 @@ import {
 } from './constants';
 import { stemWord, isFuzzyMatch } from './stemmer';
 import { extractCitationClue } from './citationClues';
-import type { SearchIndexData, SearchSuggestion } from './types';
+import type { SearchIndexData, SearchSuggestion, SearchResultWithCandidates, CandidateVerse } from './types';
 
 /**
  * Tokeniza uma frase removendo stopwords e pontuações
@@ -195,29 +195,26 @@ function evaluateWindow(
 }
 
 /**
- * Executa busca BM25 otimizada com janelas deslizantes e pistas de citação
+ * Executa busca BM25 e retorna tanto as sugestões qualificadas quanto os top 15 candidatos brutos
+ * para uso opcional pela camada de IA (Fase 5b).
  */
-export function searchSpokenPassage(
+export function searchSpokenPassageWithCandidates(
   text: string,
   indexData: SearchIndexData
-): SearchSuggestion[] {
+): SearchResultWithCandidates {
   const norm = normalize(text);
-  if (!norm.trim()) return [];
+  if (!norm.trim()) return { suggestions: [], candidates: [] };
 
-  // 1. Extração de pista de citação ("está escrito", "diz assim", etc.)
   const { hasClue, cleanedText } = extractCitationClue(norm);
-
   const words = cleanedText.split(/\s+/).filter(Boolean);
-  if (words.length === 0) return [];
+  if (words.length === 0) return { suggestions: [], candidates: [] };
 
-  // 2. Janelas deslizantes de 5 a 10 palavras
   const windows = generateSlidingWindows(words, SLIDING_WINDOW_MIN, SLIDING_WINDOW_MAX);
-  if (windows.length === 0) return [];
+  if (windows.length === 0) return { suggestions: [], candidates: [] };
 
   const minScoreThreshold = hasClue ? MIN_ABSOLUTE_SCORE_WITH_CLUE : MIN_ABSOLUTE_SCORE;
   const minIdfThreshold = hasClue ? MIN_ACCUMULATED_IDF_WITH_CLUE : MIN_ACCUMULATED_IDF;
 
-  // Avalia cada janela e rastreia o melhor score por documento e a janela vencedora
   const bestDocMap: Record<
     number,
     {
@@ -247,49 +244,39 @@ export function searchSpokenPassage(
     }
   }
 
-  // Filtragem e qualificação dos melhores candidatos
-  const qualified: {
-    docIdx: number;
-    score: number;
-    accumulatedIdf: number;
-    matchedTokens: string[];
-    winningWindow: string;
-  }[] = [];
+  // Candidatos ordenados por score (mesmo com score moderado para alimentar a IA)
+  const allCandidatesSorted = Object.keys(bestDocMap)
+    .map((docIdxStr) => ({ docIdx: Number(docIdxStr), ...bestDocMap[Number(docIdxStr)]! }))
+    .sort((a, b) => b.score - a.score);
 
-  for (const docIdxStr of Object.keys(bestDocMap)) {
-    const docIdx = Number(docIdxStr);
-    const item = bestDocMap[docIdx]!;
+  const top15Candidates: CandidateVerse[] = allCandidatesSorted.slice(0, 15).map((item) => {
+    const doc = indexData.verses[item.docIdx]!;
+    const book = BOOKS.find((b) => b.id === doc.bookId);
+    return {
+      bookName: book ? book.name : `Livro ${doc.bookId}`,
+      chapter: doc.chapter,
+      verse: doc.verse,
+      text: doc.text,
+    };
+  });
 
-    // Exigência: Score mínimo e IDF acumulado mínimo (garante palavras raras / significativas)
-    if (item.score >= minScoreThreshold && item.accumulatedIdf >= minIdfThreshold) {
-      qualified.push({
-        docIdx,
-        score: item.score,
-        accumulatedIdf: item.accumulatedIdf,
-        matchedTokens: item.matchedTokens,
-        winningWindow: item.winningWindow,
-      });
-    }
+  const qualified = allCandidatesSorted.filter(
+    (item) => item.score >= minScoreThreshold && item.accumulatedIdf >= minIdfThreshold
+  );
+
+  if (qualified.length === 0) {
+    return { suggestions: [], candidates: top15Candidates };
   }
 
-  if (qualified.length === 0) return [];
-
-  // Ordenação decrescente por score
-  qualified.sort((a, b) => b.score - a.score);
-
   const top1 = qualified[0]!;
-
-  // Validação de margem de segurança entre 1º e 2º colocado
   if (qualified.length > 1) {
     const top2 = qualified[1]!;
     const margin = top1.score / (top2.score || 1);
     if (margin < TOP_SCORE_MARGIN_RATIO && top1.score < 35) {
-      // Dúvida entre os dois primeiros colocados -> na dúvida, não sugerir
-      return [];
+      return { suggestions: [], candidates: top15Candidates };
     }
   }
 
-  // Montar sugestões
   const results: SearchSuggestion[] = [];
   const { verses } = indexData;
   const topN = qualified.slice(0, 3);
@@ -317,8 +304,19 @@ export function searchSpokenPassage(
       matchedTokens: item.matchedTokens,
       winningWindow: item.winningWindow,
       hasCitationClue: hasClue,
+      sourceType: 'lexical',
     });
   }
 
-  return results;
+  return { suggestions: results, candidates: top15Candidates };
+}
+
+/**
+ * Executa busca BM25 otimizada com janelas deslizantes e pistas de citação
+ */
+export function searchSpokenPassage(
+  text: string,
+  indexData: SearchIndexData
+): SearchSuggestion[] {
+  return searchSpokenPassageWithCandidates(text, indexData).suggestions;
 }

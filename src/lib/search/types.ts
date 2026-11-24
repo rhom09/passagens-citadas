@@ -13,6 +13,20 @@ export interface SearchSuggestion {
   matchedTokens: string[];
   winningWindow?: string;
   hasCitationClue?: boolean;
+  sourceType?: 'lexical' | 'ai';
+  reasoning?: string;
+}
+
+export interface CandidateVerse {
+  bookName: string;
+  chapter: number;
+  verse: number;
+  text: string;
+}
+
+export interface SearchResultWithCandidates {
+  suggestions: SearchSuggestion[];
+  candidates: CandidateVerse[];
 }
 
 export interface VerseIndexDoc {

@@ -6,6 +6,7 @@
 - Fase 2 (UI & Estabilização): Concluída.
 - Fase 3 (PWA/Offline): Concluída.
 - Fase 5 (Trecho falado / Busca Léxica BM25 Aprimorada): Concluída.
+- Fase 5b (Camada de IA para Paráfrases — Opcional / Desligada por padrão): Concluída.
 - Fase 6 (Refinamentos do detector): Concluída.
 - Deploy Protegido (Docs/05): Concluído (Middleware Basic Auth + .vercelignore).
 
@@ -13,7 +14,7 @@
 - Estabilização de reconhecimento via `useStabilizedPassages`:
   - 700ms para passagens com versículo (ex: "João 3:16").
   - 1500ms para passagens apenas com capítulo (ex: "João 3").
-- `DebugInspector` (`?debug=1`): Exibe os últimos 30 segmentos, incluindo `rawText`, `normalized`, passagens aceitas/rejeitadas, sugestões ambíguas, sugestões de trecho falado por BM25, scores, identificação de pista de citação e a janela vencedora.
+- `DebugInspector` (`?debug=1`): Exibe os últimos 30 segmentos, incluindo `rawText`, `normalized`, passagens aceitas/rejeitadas, sugestões ambíguas, sugestões de trecho falado por BM25, scores, identificação de pista de citação, janela vencedora e identificação via IA.
 - Detector:
   - Suporte a conectores (até 3 palavras) entre ordinal e livro: "segunda carta aos Tessalonicenses".
   - Suporte a "verso/versos" como marcador de versículo.
@@ -31,6 +32,13 @@
   - **Tolerância morfológica:** stemmer leve de radicais para português (plurais/verbos) e tolerância a 1 erro de digitação/transcrição (Levenshtein ≤ 1) em palavras com 6+ caracteres.
   - **Maturidade contínua:** reavaliação a cada atualização de transcrição; na UI, as palavras correspondentes são destacadas em negrito (`HighlightedSnippet`).
   - **Avaliação estendida (`pnpm search:eval`):** avalia trechos do meio, citações precedidas por contexto de púlpito e frases divididas em dois segmentos, com 50 frases comuns de pregação (zero falsos positivos).
+- **Fase 5b (Camada de IA opcional para paráfrases):**
+  - Desligada por padrão; configurável em `/config`.
+  - Interface `IdentifyProvider` desacoplada com implementação padrão em `GeminiIdentifyProvider` via REST API pura (timeout de 3s, chave `GEMINI_API_KEY` só no servidor, modelo via `GEMINI_MODEL`).
+  - Rota protegida `/api/identify` com autenticação Basic Auth compartilhada.
+  - Disparo seguro: somente quando a busca léxica falha e há pista de citação ou $\ge 8$ palavras de conteúdo.
+  - Limite de taxa (mínimo 8s entre chamadas), teto por culto configurável e pausa silenciosa de 60s em caso de erro 429.
+  - UI: badge visual destacado "🤖 pela IA", exigindo toque explícito do operador para promover.
 - Fase 3 (PWA & Offline):
   - Fontes locais gerenciadas via `next/font/google` com injeção de variável CSS `--font-dm-mono`.
   - Remoção do `@import` externo do Google Fonts em `globals.css`.
@@ -51,6 +59,7 @@
 - Trecho falado usa busca BM25 própria no navegador via Web Worker, sem embeddings nem serviços externos (mantendo 100% de privacidade e viabilidade offline).
 - PWA implementado com Service Worker nativo/manual para evitar conflitos de compatibilidade entre Serwist e Next 16 / Turbopack.
 - Aliases de transcrição em tabela única (`TRANSCRIPTION_ALIASES`) em `parse.ts`, fácil de ampliar a partir de observações do DebugInspector em campo.
+- Camada de IA opcional e desligada por padrão: o texto transcrito só sai do navegador se o operador ativar explicitamente em `/config`, ciente do aviso de privacidade.
 
 ## Ambiente e Armadilhas
 - Windows 11 + PowerShell + Antigravity.

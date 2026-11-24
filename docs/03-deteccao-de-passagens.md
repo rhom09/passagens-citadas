@@ -1,9 +1,10 @@
 # 03 — Detecção de passagens e Busca por Trecho
 
 ## O que o detector faz
-Recebe texto falado (transcrito) e identifica passagens bíblicas citadas, com dois mecanismos complementares:
+Recebe texto falado (transcrito) e identifica passagens bíblicas citadas, com três mecanismos complementares:
 1. **Detecção Explícita de Referência (`src/lib/detect`):** Identifica livro, capítulo e versículo (ex: "João 3:16").
 2. **Busca de Trecho Falado (`src/lib/search` - RF-08):** Busca léxica BM25 no texto da ARC quando o pastor cita o texto bíblico sem dizer a referência.
+3. **Camada de IA para Paráfrases (`src/lib/identify` - Fase 5b, opcional):** Identifica citações parafraseadas ou com muito contexto quando a busca léxica não encontra sugestões.
 
 ---
 
@@ -54,6 +55,22 @@ Quando o pastor cita o texto da Bíblia de memória sem citar o livro/capítulo:
 
 ---
 
+## 3. Camada de IA (Fase 5b — Opcional / Desligada por padrão)
+
+Quando a busca léxica não encontra correspondência e a citação é parafraseada:
+1. **Interface Desacoplada (`IdentifyProvider`):** Suporte nativo ao Google Gemini (via `GEMINI_API_KEY` e modelo configurável em `GEMINI_MODEL`), com rota protegida `/api/identify` sob Basic Auth e timeout de 3 segundos. Preparado para Anthropic e outros provedores.
+2. **Gatilhos de Disparo:**
+   - Ocorre apenas se a busca léxica (BM25) não retornou nenhuma sugestão.
+   - O buffer contém pista de citação OU possui $\ge 8$ palavras de conteúdo bíblico.
+   - Respeita intervalo mínimo de 8 segundos entre requisições.
+   - Teto configurável por culto em `/config` (padrão: 40 chamadas). Em caso de 429 (rate limit), entra em pausa silenciosa por 60 segundos.
+3. **Validação Obrigatória & Segurança:**
+   - A resposta da IA é sempre validada contra as contagens canônicas da Bíblia (`validatePassage`).
+   - O texto exibido ao operador vem **sempre** da ARC local; alucinações de texto do modelo são ignoradas.
+   - Marcada na interface com badge **"🤖 pela IA"** e nunca é promovida sozinha ao destaque.
+
+---
+
 ## Casos de teste de referência
 
 | Fala (transcrita) | Resultado esperado |
@@ -90,6 +107,7 @@ Quando o pastor cita o texto da Bíblia de memória sem citar o livro/capítulo:
 | "Canticos 1:2" | Cantares 1:2 (alias de transcrição) |
 | "Coríntios 13:4" | sugestões ambíguas (1 e 2 Coríntios 13:4) |
 | "existe uma passagem que diz assim porque deus amou o mundo" | Sugestão por trecho: João 3:16 |
+| "deus amou tanto a humanidade que enviou seu único filho..." | Sugestão por IA: João 3:16 (Fase 5b) |
 
 ---
 

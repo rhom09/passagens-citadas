@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import type { SearchSuggestion } from '@/lib/search/types';
+import type { SearchSuggestion, CandidateVerse } from '@/lib/search/types';
 
 export function useSpokenSearch() {
   const workerRef = useRef<Worker | null>(null);
   const [isReady, setIsReady] = useState(false);
-  const pendingRequests = useRef<Map<string, (suggestions: SearchSuggestion[]) => void>>(new Map());
+  const pendingRequests = useRef<
+    Map<string, (result: { suggestions: SearchSuggestion[]; candidates: CandidateVerse[] }) => void>
+  >(new Map());
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -17,11 +19,13 @@ export function useSpokenSearch() {
       { type: 'module' }
     );
 
-    worker.onmessage = (e: MessageEvent<{ id: string; suggestions: SearchSuggestion[] }>) => {
-      const { id, suggestions } = e.data;
+    worker.onmessage = (
+      e: MessageEvent<{ id: string; suggestions: SearchSuggestion[]; candidates?: CandidateVerse[] }>
+    ) => {
+      const { id, suggestions, candidates } = e.data;
       const callback = pendingRequests.current.get(id);
       if (callback) {
-        callback(suggestions);
+        callback({ suggestions, candidates: candidates || [] });
         pendingRequests.current.delete(id);
       }
     };
@@ -35,16 +39,19 @@ export function useSpokenSearch() {
     };
   }, []);
 
-  const search = useCallback((id: string, text: string): Promise<SearchSuggestion[]> => {
-    return new Promise((resolve) => {
-      if (!workerRef.current) {
-        resolve([]);
-        return;
-      }
-      pendingRequests.current.set(id, resolve);
-      workerRef.current.postMessage({ id, text });
-    });
-  }, []);
+  const search = useCallback(
+    (id: string, text: string): Promise<{ suggestions: SearchSuggestion[]; candidates: CandidateVerse[] }> => {
+      return new Promise((resolve) => {
+        if (!workerRef.current) {
+          resolve({ suggestions: [], candidates: [] });
+          return;
+        }
+        pendingRequests.current.set(id, resolve);
+        workerRef.current.postMessage({ id, text });
+      });
+    },
+    []
+  );
 
   return { search, isReady };
 }
