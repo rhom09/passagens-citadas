@@ -5,7 +5,7 @@
 - Fase 1 (Dados Bíblicos & Detecção): Concluída.
 - Fase 2 (UI & Estabilização): Concluída.
 - Fase 3 (PWA/Offline): Concluída.
-- Fase 5 (Trecho falado / Busca Léxica BM25): Concluída.
+- Fase 5 (Trecho falado / Busca Léxica BM25 Aprimorada): Concluída.
 - Fase 6 (Refinamentos do detector): Concluída.
 - Deploy Protegido (Docs/05): Concluído (Middleware Basic Auth + .vercelignore).
 
@@ -13,7 +13,7 @@
 - Estabilização de reconhecimento via `useStabilizedPassages`:
   - 700ms para passagens com versículo (ex: "João 3:16").
   - 1500ms para passagens apenas com capítulo (ex: "João 3").
-- `DebugInspector` (`?debug=1`): Exibe os últimos 30 segmentos, incluindo `rawText`, `normalized`, passagens aceitas/rejeitadas, sugestões ambíguas e sugestões de trecho falado por BM25.
+- `DebugInspector` (`?debug=1`): Exibe os últimos 30 segmentos, incluindo `rawText`, `normalized`, passagens aceitas/rejeitadas, sugestões ambíguas, sugestões de trecho falado por BM25, scores, identificação de pista de citação e a janela vencedora.
 - Detector:
   - Suporte a conectores (até 3 palavras) entre ordinal e livro: "segunda carta aos Tessalonicenses".
   - Suporte a "verso/versos" como marcador de versículo.
@@ -23,14 +23,14 @@
   - **Ordem invertida:** "capítulo N versículo M de LIVRO" é detectada. Para numerados, o ordinal ainda é exigido.
   - **Aliases de transcrição:** Habacuc→Habacuque, Oseas→Oséias, Filemon→Filemom, Canticos→Cantares, Atos dos Apóstolos→Atos. Para adicionar: `TRANSCRIPTION_ALIASES` em `src/lib/detect/parse.ts`.
   - **Sugestões ambíguas:** `AmbiguousSuggestions` exibe botões abaixo do ReferenceCard; operador toca para promover. `DebugInspector` mostra sugestões e candidatos validados.
-- **Fase 5 (Trecho falado — RF-08):**
-  - Busca léxica local com BM25 próprio em `src/lib/search` (sem dependências externas).
-  - Geração de `public/data/search-index.v1.json` via `pnpm bible:build` (composto de tokens normalizados, sem stopwords e com IDF).
-  - Cache-first no Service Worker (`public/sw.js`).
-  - Execução desacoplada via Web Worker (`search.worker.ts`) e hook `useSpokenSearch` executado apenas quando não há referência explícita na fala.
-  - Limiares estritos de segurança: mínimo de 4 palavras de conteúdo em comum, score ≥ 12, margem mínima de 35% sobre 2º colocado, boost de 1.5x em n-gramas contíguos.
-  - Interface do operador: card `SpokenTextSuggestions` com destaque manual e exibição no `DebugInspector`.
-  - Script de avaliação `pnpm search:eval` para validação de meta (≥ 90% top 3, zero falsos positivos em frases de púlpito).
+- **Fase 5 Aprimorada (Trecho falado — RF-08):**
+  - **Janelas deslizantes:** geração de janelas de 5 a 10 palavras sobre o buffer, elegendo a janela com maior score.
+  - **Buffer entre segmentos:** retém até 25 palavras dos segmentos recentes com expiração automática após 20s de silêncio para contornar pausas na transcrição do Chrome.
+  - **Pistas de citação:** detecção de expressões como "está escrito", "diz assim", "a palavra diz", etc. Remove da consulta e aplica limiar adaptativo para o trecho seguinte.
+  - **Pontuação por raridade:** prioriza palavras raras usando IDF acumulado e n-gramas na ordem, substituindo o mínimo fixo rígido de palavras.
+  - **Tolerância morfológica:** stemmer leve de radicais para português (plurais/verbos) e tolerância a 1 erro de digitação/transcrição (Levenshtein ≤ 1) em palavras com 6+ caracteres.
+  - **Maturidade contínua:** reavaliação a cada atualização de transcrição; na UI, as palavras correspondentes são destacadas em negrito (`HighlightedSnippet`).
+  - **Avaliação estendida (`pnpm search:eval`):** avalia trechos do meio, citações precedidas por contexto de púlpito e frases divididas em dois segmentos, com 50 frases comuns de pregação (zero falsos positivos).
 - Fase 3 (PWA & Offline):
   - Fontes locais gerenciadas via `next/font/google` com injeção de variável CSS `--font-dm-mono`.
   - Remoção do `@import` externo do Google Fonts em `globals.css`.

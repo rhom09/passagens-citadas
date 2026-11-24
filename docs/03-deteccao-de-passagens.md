@@ -1,51 +1,62 @@
-# 03 — Detecção de passagens
+# 03 — Detecção de passagens e Busca por Trecho
 
-Referência de comportamento: `prototype/passagens-citadas.html` (funções `norm`, `numWords`, `detect`).
+## O que o detector faz
+Recebe texto falado (transcrito) e identifica passagens bíblicas citadas, com dois mecanismos complementares:
+1. **Detecção Explícita de Referência (`src/lib/detect`):** Identifica livro, capítulo e versículo (ex: "João 3:16").
+2. **Busca de Trecho Falado (`src/lib/search` - RF-08):** Busca léxica BM25 no texto da ARC quando o pastor cita o texto bíblico sem dizer a referência.
 
-## Pipeline
-1. **Normalizar:** minúsculas, remover acentos, trocar `3:16`/`3,16`/`3.16` por `3 versiculo 16`, remover pontuação, colapsar espaços.
-2. **Números por extenso → dígitos** (até 3 dígitos, com conector "e"): "cento e dezenove" → 119; "vinte e oito" → 28. "um/uma" → 1, "dois/duas" → 2, "três" → 3.
-3. **Casar referência** com regex: `[prefixo ordinal] LIVRO [capítulo] N [versículo] M [ao/até/a/e] K`.
-   - Prefixo: `primeiro/primeira/segundo/.../1/2/3`, opcionalmente seguido de "carta" e "de/do/aos".
-   - Livros numerados (1–2 Samuel, Reis, Crônicas, Coríntios, Tessalonicenses, Timóteo, Pedro; 1–3 João) **exigem** prefixo; sem ele, ignorar.
-   - "João" sem prefixo = Evangelho; "Jó" é a forma normalizada `jo` (na fala, `jo` = Jó).
-4. **Validar** contra os dados: capítulo existe; **versículo existe no capítulo**; fim do intervalo > início e existe.
-5. **Livros de capítulo único** (Obadias, Filemom, 2 João, 3 João, Judas): "Judas 5" = Judas 1:5.
-6. **Emitir** `Passage[]` (ver docs/02).
+---
 
-## Bug conhecido do protótipo
-O protótipo valida só o capítulo, não o versículo. Exemplo real de teste: falar "Números 2:88" exibiu **Números 2:88**, que não existe (Números 2 tem 34 versículos). A versão nova deve rejeitar. Corrigir exige os dados da ARC (docs/04).
+## 1. Detecção Explícita de Referência
 
-## Regras de conectores, contexto e descarte
-- **Conectores:** Aceita até 3 palavras de ligação ("carta", "epístola", "a", "de", "ao", etc.) entre prefixo ordinal e livro.
-- **Contexto (RF-09):** Frases do tipo "versículo N" completam a passagem anterior (se houver capítulo citado) dentro de uma janela de 15 segundos.
-- **Descarte de intervalo:** Se o versículo final for inválido (ex: menor que o inicial, ou inexistente), a detecção descarta o final e considera apenas o inicial (se válido).
-- **Livro numerado sem prefixo:** Citações como "Tessalonicenses 1:1" geram **sugestões ambíguas** (nunca vão ao destaque sozinhas). O operador toca em uma das sugestões para promover. "João" sem prefixo continua sendo o Evangelho.
-- **Ordem invertida:** "capítulo N versículo M de LIVRO" é detectada. Para livros numerados em ordem invertida, o prefixo ordinal continua sendo exigido para evitar falso positivo (ex: "capítulo 2 versículo 3 da segunda carta aos Tessalonicenses" → 2 Tessalonicenses 2:3).
-- **Aliases de transcrição:** Variantes de pronúncia/transcrição mapeiam para a forma canônica:
-  - Habacuc → Habacuque
-  - Oseas → Oséias
-  - Filemon → Filemom
-  - Cânticos/Canticos → Cantares
-  - Atos dos Apóstolos → Atos
-  - Para adicionar nova variante: normalize (minúsculas, sem acentos) e insira em `TRANSCRIPTION_ALIASES` em `src/lib/detect/parse.ts`.
+1. **Normalização:** minúsculas, remove pontuação, converte números por extenso para dígitos ("três" → 3, "primeira" → 1ª).
+2. **Identificação do livro:** compara com lista canônica dos 66 livros da Bíblia protestante, aceitando abreviações e variações fonéticas comuns.
+3. **Extração de capítulo e versículo(s):**
+   - "livro capítulo versículo" (ex.: "João 3 16", "João 3 verso 16", "João capítulo 3 versículo 16")
+   - Notação padrão: "João 3:16", "João 3.16"
+   - Intervalos: "João 3:16-18", "João 3 16 ao 18"
+   - Ordem invertida: "capítulo 3 versículo 16 de João"
+4. **Validação contra a Bíblia:**
+   - O livro existe?
+   - O capítulo existe no livro?
+   - O(s) versículo(s) existem no capítulo?
+   - Se qualquer verificação falhar, **não detecta**.
+5. **Classificação de confiança:**
+   - Alta: livro + capítulo + versículo
+   - Média: livro + capítulo (sem versículo)
+   - Baixa / Ambígua: livros numerados sem ordinal geram sugestões secundárias para o operador escolher
 
-## Detecção de Trecho Falado (RF-08 — Busca Léxica BM25)
-Quando o orador cita o texto do versículo diretamente sem dizer a referência bíblica (ex: *"porque Deus amou o mundo de tal maneira..."*):
-- **Algoritmo:** BM25 no cliente com índice invertido e IDF pré-calculados em `public/data/search-index.v1.json` via `pnpm bible:build`.
-- **Janela deslizante:** últimas 20 palavras da fala normalizada, sem stopwords em português.
-- **Limiares de segurança (falso positivo é pior que perder detecção):**
-  1. No mínimo 4 palavras de conteúdo em comum com o versículo.
-  2. Score BM25 mínimo: 12.0.
-  3. Margem: o score do 1º colocado deve ser pelo menos 35% superior ao 2º colocado (ou score absoluto massivo).
-  4. Boost para bigramas e trigramas contíguos na mesma ordem (1.5x).
-  5. Se houver dúvida, nenhuma sugestão é emitida.
-- **Execução:** Web Worker dedicado (`src/lib/search/search.worker.ts`), sem travar a thread principal da UI.
-- **UI:** Exibido em card próprio *"📖 Sugestões pelo texto (fala)"*. **Nunca é promovido ao destaque automaticamente**; o operador deve tocar para promover.
-- **Disparo:** Executado apenas em trechos estáveis ou finais **sem** referência explícita detectada.
+---
 
-## Casos de teste (mínimo)
-| Entrada | Esperado |
+## 2. Busca de Trecho Falado (BM25 Aprimorado)
+
+Quando o pastor cita o texto da Bíblia de memória sem citar o livro/capítulo:
+
+1. **Buffer entre segmentos:**
+   - Mantém as últimas 25 palavras dos segmentos recentes para contornar cortes causados por pausas no reconhecimento de voz do navegador.
+   - Expira após 20 segundos de silêncio.
+2. **Pistas de citação:**
+   - Reconhece expressões introdutórias: `"está escrito"`, `"diz assim"`, `"a palavra diz"`, `"a Bíblia diz"`, `"como diz"`, etc.
+   - Remove essas expressões da consulta para não poluir o score léxico.
+   - Aplica sensibilidade ajustada (limiar de score de 8.0 vs 11.0) para as janelas que sucedem a pista.
+3. **Janelas deslizantes:**
+   - Avalia subconjuntos de 5 a 10 palavras sobre o buffer e elege a janela com maior pontuação e relevância.
+4. **Pontuação & Relevância:**
+   - Prioriza palavras raras usando IDF acumulado.
+   - Aplica boost de 1.5x para bigramas e trigramas adjacentes preservados na ordem do versículo.
+5. **Tolerância Morfológica:**
+   - Radicais simples em português (stemmer leve para plurais e desinências verbais frequentes).
+   - Tolerância a 1 erro de digitação/transcrição (distância de Levenshtein ≤ 1) em palavras com 6 ou mais letras.
+6. **Maturidade da sugestão & UI:**
+   - Reavaliação contínua conforme o pastor fala, sem piscar na interface (estabilização).
+   - Na interface do operador, as palavras do versículo correspondentes à fala aparecem destacadas em negrito.
+   - Exibição de score e janela vencedora no `DebugInspector` (`?debug=1`).
+
+---
+
+## Casos de teste de referência
+
+| Fala (transcrita) | Resultado esperado |
 |---|---|
 | "abram em João 3:16" | João 3:16 |
 | "João capítulo três versículo dezesseis" | João 3:16 |
@@ -78,10 +89,11 @@ Quando o orador cita o texto do versículo diretamente sem dizer a referência b
 | "Filemon 10" | Filemom 1:10 (alias de transcrição + capítulo único) |
 | "Canticos 1:2" | Cantares 1:2 (alias de transcrição) |
 | "Coríntios 13:4" | sugestões ambíguas (1 e 2 Coríntios 13:4) |
+| "existe uma passagem que diz assim porque deus amou o mundo" | Sugestão por trecho: João 3:16 |
 
-## Melhorias planejadas
-- Busca manual separada com abreviações (`jo` = João, `jó` = Jó, `rm`, `1co`, `sl`): tabela própria, sem conflito com a fala.
+---
 
 ## Regras de qualidade
-- O módulo `src/lib/detect` e `src/lib/search` não pode importar nada de DOM, React ou rede.
-- Cada correção de bug adiciona um caso na tabela e em `__tests__`.
+- Os módulos `src/lib/detect` e `src/lib/search` não importam nada de DOM, React ou rede.
+- O operador está sempre no controle: sugestões de trecho nunca são promovidas sozinhas ao destaque.
+- Zero falsos positivos em frases típicas de pregação que não sejam citações da Escritura.

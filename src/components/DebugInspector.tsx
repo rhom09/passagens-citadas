@@ -64,10 +64,16 @@ function DebugContent({
             )}
             {s.textSuggestions && s.textSuggestions.length > 0 && (
               <div className="text-emerald-400 mt-1">
-                Sugestões por trecho falado (BM25):
+                Sugestões por trecho falado (BM25 com janelas):
                 {s.textSuggestions.map((sug) => (
                   <div key={`${sug.passage.bookId}-${sug.passage.chapter}-${sug.passage.verseStart}`} className="pl-2">
-                    → {sug.passage.bookName} {sug.passage.chapter}:{sug.passage.verseStart} | score: {sug.score} | confiança: {sug.confidence} | &ldquo;{sug.snippet}&rdquo;
+                    → {sug.passage.bookName} {sug.passage.chapter}:{sug.passage.verseStart} | score: {sug.score} | confiança: {sug.confidence}
+                    {sug.hasCitationClue ? ' [pista de citação]' : ''}
+                    {sug.winningWindow && (
+                      <span className="text-slate-300"> | Janela: &quot;{sug.winningWindow}&quot;</span>
+                    )}
+                    <br />
+                    <span className="text-slate-400 pl-4">&ldquo;{sug.snippet}&rdquo;</span>
                   </div>
                 ))}
               </div>

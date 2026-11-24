@@ -10,6 +10,9 @@ export interface SearchSuggestion {
   confidence: number;
   snippet: string;
   matchedWordsCount: number;
+  matchedTokens: string[];
+  winningWindow?: string;
+  hasCitationClue?: boolean;
 }
 
 export interface VerseIndexDoc {

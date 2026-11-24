@@ -5,6 +5,7 @@ import { useStabilizedPassages } from '@/hooks/useStabilizedPassages';
 import { useSpokenSearch } from '@/hooks/useSpokenSearch';
 import { detectVerseOnly } from '@/lib/detect';
 import { validatePassage, detectWithAmbiguous } from '@/lib/detect/validate';
+import { RECENT_SEGMENTS_BUFFER_WORDS, BUFFER_EXPIRY_MS } from '@/lib/search/constants';
 import type { Passage } from '@/lib/detect/types';
 import { useEffect, useRef } from 'react';
 
@@ -37,8 +38,37 @@ export function TranscriptStabilizer() {
   // Rastreia o timestamp do último segmento com passagem só-capítulo
   const pendingChapterRef = useRef<{ passage: Passage; timestamp: number } | null>(null);
 
-  // Rastreia última busca feita por segmento para evitar loop
+  // Buffer multi-segmentos: guarda as últimas palavras recentes de segmentos passados
+  // Expira após BUFFER_EXPIRY_MS (20s) sem fala
+  const recentWordsBufferRef = useRef<{ words: string[]; lastUpdated: number }>({
+    words: [],
+    lastUpdated: Date.now(),
+  });
+
+  // Rastreia última busca feita por segmento para evitar requisições idênticas
   const lastSearchedRef = useRef<{ segmentId: string; text: string }>({ segmentId: '', text: '' });
+
+  // Rastreia o último segmento finalizado para adicionar ao buffer de histórico
+  const lastFinalizedSegmentIdRef = useRef<string | null>(null);
+
+  // Quando um segmento se torna final, acumula no buffer multi-segmentos
+  useEffect(() => {
+    if (state.isCurrentFinal && state.currentSegmentId && state.currentSegmentId !== lastFinalizedSegmentIdRef.current) {
+      lastFinalizedSegmentIdRef.current = state.currentSegmentId;
+      const now = Date.now();
+      const newWords = state.currentTranscript.trim().split(/\s+/).filter(Boolean);
+
+      if (now - recentWordsBufferRef.current.lastUpdated > BUFFER_EXPIRY_MS) {
+        recentWordsBufferRef.current.words = [];
+      }
+
+      recentWordsBufferRef.current.words = [
+        ...recentWordsBufferRef.current.words,
+        ...newWords,
+      ].slice(-RECENT_SEGMENTS_BUFFER_WORDS);
+      recentWordsBufferRef.current.lastUpdated = now;
+    }
+  }, [state.isCurrentFinal, state.currentSegmentId, state.currentTranscript]);
 
   useEffect(() => {
     if (!state.currentSegmentId) return;
@@ -102,23 +132,32 @@ export function TranscriptStabilizer() {
     }
 
     // ── RF-08: Trecho falado (busca léxica quando NÃO há referência detectada) ──
-    // Só pesquisa se não houver passagens estabilizadas e o segmento for estável ou final
-    if (stabilizedPassages.length === 0 && state.currentTranscript.trim().length > 15) {
+    // Avalia a cada atualização para que a sugestão amadureça enquanto o pastor fala
+    if (stabilizedPassages.length === 0 && state.currentTranscript.trim().length > 10) {
       const segId = state.currentSegmentId;
-      const text = state.currentTranscript;
+      const currentText = state.currentTranscript.trim();
 
-      if (lastSearchedRef.current.segmentId === segId && lastSearchedRef.current.text === text) {
+      // Monta texto com contexto do buffer de segmentos recentes (se não expirado)
+      const now = Date.now();
+      let combinedText = currentText;
+
+      if (now - recentWordsBufferRef.current.lastUpdated <= BUFFER_EXPIRY_MS && recentWordsBufferRef.current.words.length > 0) {
+        const bufferPrefix = recentWordsBufferRef.current.words.join(' ');
+        combinedText = `${bufferPrefix} ${currentText}`;
+      }
+
+      if (lastSearchedRef.current.segmentId === segId && lastSearchedRef.current.text === combinedText) {
         return;
       }
 
-      lastSearchedRef.current = { segmentId: segId, text };
+      lastSearchedRef.current = { segmentId: segId, text: combinedText };
 
-      searchSpoken(segId, text).then((suggestions) => {
+      searchSpoken(segId, combinedText).then((suggestions) => {
         if (suggestions.length > 0) {
           dispatch({
             type: 'TRANSCRIPT',
             segmentId: segId,
-            text,
+            text: currentText,
             passages: [],
             isFinal: state.isCurrentFinal,
             textSuggestions: suggestions,

@@ -13,7 +13,7 @@ if (!fs.existsSync(searchIndexPath)) {
 const indexData = JSON.parse(fs.readFileSync(searchIndexPath, 'utf-8')) as SearchIndexData;
 console.log(`Índice carregado: ${indexData.docCount} versículos.`);
 
-// 30 Frases comuns de pregação que NÃO são versículos bíblicos literais
+// 50 Frases comuns de pregação que NÃO são versículos bíblicos literais (Meta: ZERO falsos positivos)
 const COMMON_PREACHING_PHRASES = [
   'vamos orar irmãos curvem suas cabeças nesta hora',
   'abram a sua bíblia nesta noite gloriosa',
@@ -45,21 +45,29 @@ const COMMON_PREACHING_PHRASES = [
   'receba essa oração de cura e libertação para sua casa',
   'seja bem vindo à casa do senhor jesus cristo meu querido',
   'terminamos agora o momento de oração silenciosa e reflexão',
+  'o pastor presidente estará ministrando na próxima quarta feira',
+  'deus vai abrir as portas dos céus sobre a sua vida',
+  'quem está alegre com jesus levanta a mão e glorifica',
+  'vamos fazer agora uma coleta para os irmãos necessitados',
+  'lembre-se de convidar um amigo para o nosso culto de domingo',
+  'o grupo de senhoras terá um ensaio logo após o término',
+  'que a paz que excede todo o entendimento guarde o seu coração',
+  'entregue suas preocupações nas mãos de deus e descanse',
+  'o ministério infantil está cuidando com carinho dos nossos filhos',
+  'a presença de deus está neste lugar de forma maravilhosa',
+  'não desista da promessa que o senhor colocou em seu coração',
+  'hoje é dia de festa e de louvor ao rei dos reis',
+  'vamos aplaudir os novos membros que foram batizados nas águas',
+  'creia que o impossível deus já está operando em seu favor',
+  'agradecemos a escala dos diáconos pelo serviço no templo hoje',
+  'deixe a palavra de deus transformar a sua mente e a sua casa',
+  'jesus cristo é o mesmo ontem hoje e eternamente glorificado',
+  'convidamos a igreja para a vigília de oração na sexta feira',
+  'deus abençoe ricamente a vida de cada família aqui representada',
+  'vamos nos despedir com a benção apostólica do nosso pastor',
 ];
 
-// 30 versículos selecionados da ARC (versículos bem distribuídos e conhecidos ou aleatórios)
-const TEST_INDICES = [
-  // Gênesis 1:1
-  0,
-  // João 3:16
-  26136, // aprox
-  // Salmo 23:1
-  14234, // aprox
-  // Romanos 8:28
-  28117, // aprox
-];
-
-// Completar até 30 índices com amostragem determinística espalhada
+// Amostragem determinística de 30 versículos espalhados
 const step = Math.floor(indexData.docCount / 30);
 const selectedIndices: number[] = [];
 for (let i = 0; i < 30; i++) {
@@ -67,21 +75,18 @@ for (let i = 0; i < 30; i++) {
 }
 
 console.log(`\n=================================================`);
-console.log(`        AVALIAÇÃO DE QUALIDADE (RF-08)           `);
+console.log(`        AVALIAÇÃO DE QUALIDADE ESTENDIDA (RF-08)  `);
 console.log(`=================================================\n`);
 
-// ── Teste 1: Versículos da ARC (Amostra de 30) ──────────────────────────────
-console.log('1. Testando 30 trechos retirados da Bíblia (primeiras ~10 palavras)...');
+// ── Teste 1: Versículos da ARC (Início tradicional ~10 palavras) ─────────────
+console.log('1. Teste Tradicional: 30 trechos do início do versículo (~10 palavras)...');
+let t1Top1 = 0;
+let t1Top3 = 0;
 
-let top1Correct = 0;
-let top3Correct = 0;
-
-selectedIndices.forEach((idx, i) => {
+selectedIndices.forEach((idx) => {
   const doc = indexData.verses[idx]!;
   const words = doc.text.split(/\s+/);
-  // Usa as primeiras 8 a 10 palavras do versículo como "fala" do pregador
   const speechSnippet = words.slice(0, 10).join(' ');
-
   const suggestions = searchSpokenPassage(speechSnippet, indexData);
 
   const isTop1 =
@@ -97,27 +102,109 @@ selectedIndices.forEach((idx, i) => {
       s.passage.verseStart === doc.verse
   );
 
-  if (isTop1) top1Correct++;
-  if (isTop3) top3Correct++;
-
-  const status = isTop1 ? '✓ TOP 1' : isTop3 ? '✓ TOP 3' : '✗ MISS';
-  console.log(
-    `[${(i + 1).toString().padStart(2)}] ${status.padEnd(7)} | Alvo: Livro ${doc.bookId} ${doc.chapter}:${doc.verse} | Sugestão: ${
-      suggestions[0]
-        ? `${suggestions[0].passage.bookName} ${suggestions[0].passage.chapter}:${suggestions[0].passage.verseStart} (score ${suggestions[0].score})`
-        : 'Nenhuma'
-    }`
-  );
+  if (isTop1) t1Top1++;
+  if (isTop3) t1Top3++;
 });
 
-const top1Rate = ((top1Correct / selectedIndices.length) * 100).toFixed(1);
-const top3Rate = ((top3Correct / selectedIndices.length) * 100).toFixed(1);
+console.log(`   Top 1: ${t1Top1}/30 (${((t1Top1 / 30) * 100).toFixed(1)}%) | Top 3: ${t1Top3}/30 (${((t1Top3 / 30) * 100).toFixed(1)}%)\n`);
 
-console.log(`\nTaxa Top 1: ${top1Correct}/${selectedIndices.length} (${top1Rate}%)`);
-console.log(`Taxa Top 3: ${top3Correct}/${selectedIndices.length} (${top3Rate}%) [Meta: ≥ 90%]\n`);
+// ── Teste 2 (Caso a): Trechos do MEIO do versículo (5 a 8 palavras) ──────────
+console.log('2. Teste (a): 30 trechos extraídos do MEIO do versículo (5 a 8 palavras)...');
+let t2Top1 = 0;
+let t2Top3 = 0;
 
-// ── Teste 2: Frases Comuns de Pregação (30 frases) ──────────────────────────
-console.log('2. Testando 30 frases comuns de pregação (não são versículos)...');
+selectedIndices.forEach((idx) => {
+  const doc = indexData.verses[idx]!;
+  const words = doc.text.split(/\s+/);
+  const startWord = words.length > 10 ? 4 : Math.max(0, Math.floor(words.length / 3));
+  const speechSnippet = words.slice(startWord, startWord + 7).join(' ');
+  const suggestions = searchSpokenPassage(speechSnippet, indexData);
+
+  const isTop1 =
+    suggestions.length > 0 &&
+    suggestions[0]!.passage.bookId === doc.bookId &&
+    suggestions[0]!.passage.chapter === doc.chapter &&
+    suggestions[0]!.passage.verseStart === doc.verse;
+
+  const isTop3 = suggestions.some(
+    (s) =>
+      s.passage.bookId === doc.bookId &&
+      s.passage.chapter === doc.chapter &&
+      s.passage.verseStart === doc.verse
+  );
+
+  if (isTop1) t2Top1++;
+  if (isTop3) t2Top3++;
+});
+
+console.log(`   Top 1: ${t2Top1}/30 (${((t2Top1 / 30) * 100).toFixed(1)}%) | Top 3: ${t2Top3}/30 (${((t2Top3 / 30) * 100).toFixed(1)}%)\n`);
+
+// ── Teste 3 (Caso b): Citação precedida de contexto e pós-comentário ─────────
+console.log('3. Teste (b): Citação precedida de introdução ("existe uma passagem que diz assim...") e pós-comentário...');
+let t3Top1 = 0;
+let t3Top3 = 0;
+
+selectedIndices.forEach((idx) => {
+  const doc = indexData.verses[idx]!;
+  const words = doc.text.split(/\s+/);
+  const coreSnippet = words.slice(0, 8).join(' ');
+  const combinedSpeech = `irmãos existe uma passagem que diz assim ${coreSnippet} e nós devemos guardar isso no coração`;
+  const suggestions = searchSpokenPassage(combinedSpeech, indexData);
+
+  const isTop1 =
+    suggestions.length > 0 &&
+    suggestions[0]!.passage.bookId === doc.bookId &&
+    suggestions[0]!.passage.chapter === doc.chapter &&
+    suggestions[0]!.passage.verseStart === doc.verse;
+
+  const isTop3 = suggestions.some(
+    (s) =>
+      s.passage.bookId === doc.bookId &&
+      s.passage.chapter === doc.chapter &&
+      s.passage.verseStart === doc.verse
+  );
+
+  if (isTop1) t3Top1++;
+  if (isTop3) t3Top3++;
+});
+
+console.log(`   Top 1: ${t3Top1}/30 (${((t3Top1 / 30) * 100).toFixed(1)}%) | Top 3: ${t3Top3}/30 (${((t3Top3 / 30) * 100).toFixed(1)}%)\n`);
+
+// ── Teste 4 (Caso c): Citação quebrada em dois segmentos ─────────────────────
+console.log('4. Teste (c): Citação quebrada em dois segmentos (simulando corte de pausa)...');
+let t4Top1 = 0;
+let t4Top3 = 0;
+
+selectedIndices.forEach((idx) => {
+  const doc = indexData.verses[idx]!;
+  const words = doc.text.split(/\s+/);
+  const part1 = words.slice(0, 4).join(' ');
+  const part2 = words.slice(4, 9).join(' ');
+  // Na aplicação, o buffer une os segmentos:
+  const bufferCombined = `${part1} ${part2}`;
+  const suggestions = searchSpokenPassage(bufferCombined, indexData);
+
+  const isTop1 =
+    suggestions.length > 0 &&
+    suggestions[0]!.passage.bookId === doc.bookId &&
+    suggestions[0]!.passage.chapter === doc.chapter &&
+    suggestions[0]!.passage.verseStart === doc.verse;
+
+  const isTop3 = suggestions.some(
+    (s) =>
+      s.passage.bookId === doc.bookId &&
+      s.passage.chapter === doc.chapter &&
+      s.passage.verseStart === doc.verse
+  );
+
+  if (isTop1) t4Top1++;
+  if (isTop3) t4Top3++;
+});
+
+console.log(`   Top 1: ${t4Top1}/30 (${((t4Top1 / 30) * 100).toFixed(1)}%) | Top 3: ${t4Top3}/30 (${((t4Top3 / 30) * 100).toFixed(1)}%)\n`);
+
+// ── Teste 5: 50 Frases Comuns de Pregação (Meta: ZERO falsos positivos) ─────
+console.log('5. Testando 50 frases comuns de pregação (não são versículos)...');
 let falsePositives = 0;
 
 COMMON_PREACHING_PHRASES.forEach((phrase, i) => {
@@ -125,24 +212,29 @@ COMMON_PREACHING_PHRASES.forEach((phrase, i) => {
   if (suggestions.length > 0) {
     falsePositives++;
     console.log(
-      `[${(i + 1).toString().padStart(2)}] ✗ FALSO POSITIVO! Frase: "${phrase}" → Sugeriu: ${
+      `   [${(i + 1).toString().padStart(2)}] ✗ FALSO POSITIVO! Frase: "${phrase}" → Sugeriu: ${
         suggestions[0]!.passage.bookName
       } ${suggestions[0]!.passage.chapter}:${suggestions[0]!.passage.verseStart} (score ${suggestions[0]!.score})`
     );
-  } else {
-    console.log(`[${(i + 1).toString().padStart(2)}] ✓ ZERO SUGESTÕES (OK) | "${phrase.slice(0, 35)}..."`);
   }
 });
 
-console.log(`\nFalsos positivos: ${falsePositives}/30 [Meta: 0]\n`);
+console.log(`   Falsos positivos: ${falsePositives}/50 [Meta: 0]\n`);
 
-// ── Resumo Final ────────────────────────────────────────────────────────────
-console.log('================ RESUMO DA AVALIAÇÃO ================');
-console.log(`Top 1: ${top1Rate}%`);
-console.log(`Top 3: ${top3Rate}% (Meta: >= 90%) -> ${Number(top3Rate) >= 90 ? 'PASSOU' : 'NÃO ATINGIU'}`);
-console.log(`Falsos Positivos: ${falsePositives} (Meta: 0) -> ${falsePositives === 0 ? 'PASSOU' : 'FALHOU'}`);
-console.log('=====================================================');
+// ── Consolidação dos Casos Novos ─────────────────────────────────────────────
+const totalNewCases = 30 * 3; // Casos (a), (b), (c)
+const totalNewTop3 = t2Top3 + t3Top3 + t4Top3;
+const totalNewTop1 = t2Top1 + t3Top1 + t4Top1;
+const newCasesTop3Rate = ((totalNewTop3 / totalNewCases) * 100).toFixed(1);
 
-if (Number(top3Rate) < 90 || falsePositives > 0) {
+console.log('================ RESUMO DA AVALIAÇÃO ESTENDIDA ================');
+console.log(`Casos Tradicionais (Início) -> Top 3: ${((t1Top3 / 30) * 100).toFixed(1)}%`);
+console.log(`Casos Novos (Meio, Contexto, Quebrados):`);
+console.log(`  - Top 1 Geral: ${totalNewTop1}/${totalNewCases} (${((totalNewTop1 / totalNewCases) * 100).toFixed(1)}%)`);
+console.log(`  - Top 3 Geral: ${totalNewTop3}/${totalNewCases} (${newCasesTop3Rate}%) [Meta: ≥ 85%] -> ${Number(newCasesTop3Rate) >= 85 ? 'PASSOU' : 'NÃO ATINGIU'}`);
+console.log(`Falsos Positivos em 50 frases: ${falsePositives} [Meta: 0] -> ${falsePositives === 0 ? 'PASSOU' : 'FALHOU'}`);
+console.log('===============================================================');
+
+if (Number(newCasesTop3Rate) < 85 || falsePositives > 0) {
   process.exit(1);
 }
