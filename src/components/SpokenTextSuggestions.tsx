@@ -1,8 +1,7 @@
 'use client';
 
 import { useAppStore } from '../lib/store/app-context';
-import { normalize } from '../lib/detect/normalize';
-import { stemWord, isFuzzyMatch } from '../lib/search/stemmer';
+import { HighlightedSnippet } from './HighlightedSnippet';
 import type { Passage } from '../lib/detect/types';
 import type { SearchSuggestion } from '../lib/search/types';
 
@@ -19,48 +18,6 @@ function formatRef(p: Pick<Passage, 'bookName' | 'chapter' | 'verseStart' | 'ver
 type Props = {
   onPromote: (passage: Passage, snippet?: string) => void;
 };
-
-/**
- * Renderiza o snippet destacando em negrito as palavras que casaram com a busca
- */
-function HighlightedSnippet({ snippet, matchedTokens }: { snippet: string; matchedTokens?: string[] }) {
-  if (!matchedTokens || matchedTokens.length === 0) {
-    return <>&ldquo;{snippet}&rdquo;</>;
-  }
-
-  // Prepara tokens normais e radicais dos termos buscados
-  const targetStems = new Set(matchedTokens.map((t) => stemWord(t)));
-  const targetTokens = new Set(matchedTokens);
-
-  const words = snippet.split(/\s+/);
-
-  return (
-    <span>
-      &ldquo;
-      {words.map((w, idx) => {
-        // Limpa pontuação para teste
-        const clean = normalize(w).replace(/[^a-z0-9]/g, '');
-        const isExact = targetTokens.has(clean);
-        const isStem = !isExact && targetStems.has(stemWord(clean));
-        const isFuzzy = !isExact && !isStem && matchedTokens.some((t) => isFuzzyMatch(clean, t));
-
-        const isMatch = isExact || isStem || isFuzzy;
-
-        return (
-          <span key={idx}>
-            {idx > 0 && ' '}
-            {isMatch ? (
-              <strong style={{ color: 'var(--color-text, #fff)', fontWeight: 700 }}>{w}</strong>
-            ) : (
-              w
-            )}
-          </span>
-        );
-      })}
-      &rdquo;
-    </span>
-  );
-}
 
 /**
  * Exibe sugestões pelo texto falado (RF-08 e Fase 5b).

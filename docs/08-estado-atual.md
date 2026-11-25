@@ -51,12 +51,19 @@
   - Protege todas as páginas, rotas de API, dados bíblicos (`/data/*`) e Service Worker (`/sw.js`).
   - Metadados públicos essenciais para PWA (`/manifest.json`, `/favicon.ico` e `/icon-*.png`) liberados para não quebrar a instalação nos navegadores.
   - Arquivo `.vercelignore` configurado para não ignorar `public/data/`, viabilizando o upload direto de `arc.v1.json` e `search-index.v1.json` via Vercel CLI (`vercel --prod`) sem versionar texto bíblico no Git.
+- **Busca Manual Unificada (RF-06):**
+  - Barra de busca unificada (`SearchBar.tsx`) com debounce de 200ms e mínimo de 3 caracteres.
+  - Combina resolução de abreviações bíblicas (`src/lib/detect/abbreviations.ts` e `src/lib/detect/manual.ts`) com o parser de fala e a busca léxica BM25 relaxada (`searchManualPassage`).
+  - Distinção estrita: `jo` → Evangelho de João (id 43), `jó` com acento → Jó (id 18).
+  - Resultados de referência aparecem no topo com badge específico; resultados por texto exibem até 8 versículos com termos casados em negrito (`HighlightedSnippet`).
+  - Navegação por teclado completa (`↑`/`↓`, `Enter`, `Esc`), foco acessível e alvos de toque $\ge 48\text{px}$. Ao selecionar, promove a passagem ao destaque e ao histórico.
 
 ## Decisões
 - TDD estrito foi abandonado em favor de TDD orientado a casos (tabela em docs/03 + testes em `src/lib/detect/__tests__`). Todo bug vira caso de teste.
 - Função `explainDetection(rawText)` criada para facilitar depuração no `DebugInspector`.
 - Livros numerados sem ordinal geram sugestões ambíguas (em vez de serem descartados). O operador sempre decide qual promover.
 - Trecho falado usa busca BM25 própria no navegador via Web Worker, sem embeddings nem serviços externos (mantendo 100% de privacidade e viabilidade offline).
+- Busca manual possui limiares próprios e relaxados em relação à fala (`MANUAL_SEARCH_MIN_SCORE`), pois a ação é disparada com intenção explícita do operador.
 - PWA implementado com Service Worker nativo/manual para evitar conflitos de compatibilidade entre Serwist e Next 16 / Turbopack.
 - Aliases de transcrição em tabela única (`TRANSCRIPTION_ALIASES`) em `parse.ts`, fácil de ampliar a partir de observações do DebugInspector em campo.
 - Camada de IA opcional e desligada por padrão: o texto transcrito só sai do navegador se o operador ativar explicitamente em `/config`, ciente do aviso de privacidade.

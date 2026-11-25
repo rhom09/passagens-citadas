@@ -71,6 +71,24 @@ Quando a busca léxica não encontra correspondência e a citação é parafrase
 
 ---
 
+## 4. Busca Manual Unificada (`src/components/SearchBar.tsx` — RF-06)
+
+Combina em um único campo livre:
+1. **Parser de referências e abreviações rápidas (`src/lib/detect/manual.ts`):**
+   - Suporta abreviações comuns (`jo` = João, `jó` = Jó, `rm`, `1co`, `sl`, etc.) e sintaxes com números colados ou pontuações diversas (`jo3:16`, `jo 3 16`, `1co 13:4-7`).
+   - Suporta toda a flexibilidade do detector falado (números por extenso, ordem invertida, conectores como "carta aos").
+   - Resolução de conflitos de acentuação: `jo` (sem acento) mapeia para o Evangelho de João; `jó` (com acento) mapeia para o livro de Jó.
+2. **Busca léxica BM25 relaxada (`searchManualPassage`):**
+   - Limiares próprios e separados da fala: sem exigência de mínimo de palavras raras/IDF, sem restrição de margem entre 1º e 2º colocados, aceita consultas a partir de 1 palavra.
+   - Retorna até 8 resultados ordenados por score.
+3. **Experiência de Usuário (UI/UX) & Acessibilidade:**
+   - Debounce de ~200ms e ativação a partir de 3 caracteres digitados.
+   - Menu dropdown suspenso exibindo a referência detectada em 1º lugar (se houver) e versículos encontrados por texto com os termos correspondentes em negrito.
+   - Navegação por teclado: setas `↑` / `↓` para alternar o foco (`aria-activedescendant`), `Enter` para selecionar e promover ao destaque e histórico, e `Esc` para limpar e fechar.
+   - Alvos de toque com altura mínima de 48px/52px para uso ágil no celular ou tablet do operador.
+
+---
+
 ## Casos de teste de referência
 
 | Fala (transcrita) | Resultado esperado |

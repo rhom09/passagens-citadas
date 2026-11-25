@@ -21,7 +21,7 @@ Culto presencial, luz baixa, áudio com eco, pressa. Bíblia usada: **ARC**. Pro
 | RF-03 | Validar livro, capítulo **e versículo** contra a ARC | Must |
 | RF-04 | Mostrar a referência atual em destaque + texto do versículo | Must |
 | RF-05 | Histórico das últimas detecções; tocar em uma traz de volta ao destaque | Must |
-| RF-06 | Busca manual rápida ("jo 3 16", "rm 8 28") | Must |
+| RF-06 | Busca manual unificada rápida: por referência ("jo 3 16", "rm 8") e por texto livre ("o Senhor é meu pastor") com até 8 resultados | Must |
 | RF-07 | Instalável como app (PWA) no celular e no PC | Must |
 | RF-08 | Detectar trecho **falado** do texto (sem citar a referência) e sugerir as melhores opções | Should |
 | RF-09 | Contexto: "versículo 5" sem capítulo usa o último capítulo citado | Should |

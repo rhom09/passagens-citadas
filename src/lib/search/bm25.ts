@@ -12,6 +12,8 @@ import {
   MIN_ACCUMULATED_IDF_WITH_CLUE,
   TOP_SCORE_MARGIN_RATIO,
   NGRAM_BOOST,
+  MANUAL_SEARCH_MIN_SCORE,
+  MANUAL_SEARCH_MAX_RESULTS,
 } from './constants';
 import { stemWord, isFuzzyMatch } from './stemmer';
 import { extractCitationClue } from './citationClues';
@@ -320,3 +322,74 @@ export function searchSpokenPassage(
 ): SearchSuggestion[] {
   return searchSpokenPassageWithCandidates(text, indexData).suggestions;
 }
+
+/**
+ * Executa busca léxica rápida dedicada à BUSCA MANUAL do operador (RF-06).
+ * Regras:
+ * - Sem janelas deslizantes complexas: avalia a consulta inteira do operador.
+ * - Aceita consultas curtas de 1 palavra (ex: "princípio", "ressurreição").
+ * - Limiar de score mínimo relaxado (MANUAL_SEARCH_MIN_SCORE).
+ * - Sem restrição de margem entre 1º e 2º colocados nem mínimo de palavras raras.
+ * - Retorna até `limit` resultados (padrão: MANUAL_SEARCH_MAX_RESULTS = 8) com termos casados.
+ */
+export function searchManualPassage(
+  text: string,
+  indexData: SearchIndexData,
+  limit = MANUAL_SEARCH_MAX_RESULTS
+): SearchSuggestion[] {
+  const norm = normalize(text);
+  if (!norm.trim()) return [];
+
+  const rawWords = norm.split(/\s+/).filter(Boolean);
+  if (rawWords.length === 0) return [];
+
+  // Na busca manual, se todas forem stopwords ou a consulta tiver 1 palavra de 2+ letras,
+  // permite a busca mesmo que seja stopword para não bloquear a intenção do operador
+  let queryTokens = rawWords.filter((w) => w.length > 1 && !PORTUGUESE_STOPWORDS.has(w));
+  if (queryTokens.length === 0) {
+    queryTokens = rawWords.filter((w) => w.length > 1);
+  }
+  if (queryTokens.length === 0) return [];
+
+  const evals = evaluateWindow(queryTokens, rawWords, indexData);
+  if (evals.length === 0) return [];
+
+  // Filtrar pelo score mínimo da busca manual e ordenar descrescente
+  const filtered = evals
+    .filter((e) => e.score >= MANUAL_SEARCH_MIN_SCORE)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+
+  const { verses } = indexData;
+  const results: SearchSuggestion[] = [];
+
+  for (const item of filtered) {
+    const doc = verses[item.docIdx];
+    if (!doc) continue;
+
+    const book = BOOKS.find((b) => b.id === doc.bookId);
+    const bookName = book ? book.name : `Livro ${doc.bookId}`;
+
+    const rawDocWords = doc.text.split(/\s+/);
+    const snippet = rawDocWords.slice(0, 16).join(' ') + (rawDocWords.length > 16 ? '...' : '');
+    const confidence = Math.min(1, item.score / 25);
+
+    results.push({
+      passage: {
+        bookId: doc.bookId,
+        bookName,
+        chapter: doc.chapter,
+        verseStart: doc.verse,
+      },
+      score: Math.round(item.score * 10) / 10,
+      confidence: Math.round(confidence * 100) / 100,
+      snippet,
+      matchedWordsCount: item.matchedTokens.length,
+      matchedTokens: item.matchedTokens,
+      sourceType: 'lexical',
+    });
+  }
+
+  return results;
+}
+

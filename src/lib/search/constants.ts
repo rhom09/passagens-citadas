@@ -33,3 +33,9 @@ export const MIN_ACCUMULATED_IDF = 6.5; // Mínimo de IDF acumulado nas palavras
 export const MIN_ACCUMULATED_IDF_WITH_CLUE = 4.8;
 export const TOP_SCORE_MARGIN_RATIO = 1.30; // Score do 1º deve ser ≥ 30% superior ao 2º colocado
 export const NGRAM_BOOST = 1.5; // Multiplicador para bigramas/trigramas consecutivos na mesma ordem
+
+// ── Limiares para Busca Manual (RF-06) ──────────────────────────
+// Na busca manual o operador tem intenção explícita; falsos positivos não são impeditivos.
+export const MANUAL_SEARCH_MIN_SCORE = 1.0;
+export const MANUAL_SEARCH_MAX_RESULTS = 8;
+
