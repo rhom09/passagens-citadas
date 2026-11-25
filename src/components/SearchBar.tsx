@@ -104,10 +104,11 @@ export function SearchBar() {
               r.passage.verseStart === s.passage.verseStart
           );
           if (!isDup) {
+            const passage = { ...s.passage, source: 'manual' as const, confidence: s.confidence };
             results.push({
               id: `text-${s.passage.bookId}-${s.passage.chapter}-${s.passage.verseStart}`,
-              passage: s.passage,
-              title: formatPassageTitle(s.passage),
+              passage,
+              title: formatPassageTitle(passage),
               snippet: s.snippet,
               matchedTokens: s.matchedTokens,
               type: 'text',
